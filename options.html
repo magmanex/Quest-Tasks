@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="page">
+    <header class="phead">
+      <span class="brand-mark">🎯</span>
+      <div>
+        <h1>Quest Tasks</h1>
+        <div class="eyebrow">ตั้งค่าและเชื่อมต่อ Notion</div>
+      </div>
+    </header>
+
+    <!-- STEP 1: token -->
+    <section class="block">
+      <div class="block-num">1</div>
+      <div class="block-body">
+        <h2>เชื่อมต่อ Notion</h2>
+        <p class="muted">
+          สร้าง Internal Integration ที่
+          <a href="https://www.notion.so/my-integrations" target="_blank" rel="noopener">notion.so/my-integrations</a>
+          แล้วเปิด capability ให้ครบทั้ง <b>Read</b>, <b>Update</b>, <b>Insert</b> จากนั้นคัดลอก token มาวาง
+        </p>
+        <div class="row">
+          <input id="token" type="password" placeholder="ntn_..." autocomplete="off">
+          <button id="test-btn" class="btn">ทดสอบ</button>
+        </div>
+        <div id="token-status" class="status"></div>
+      </div>
+    </section>
+
+    <!-- STEP 2: parent + migrate -->
+    <section class="block" id="step2" data-locked="true">
+      <div class="block-num">2</div>
+      <div class="block-body">
+        <h2>เตรียม database</h2>
+        <p class="muted">
+          แชร์ page สัก 1 หน้าให้ integration ก่อน (ในหน้านั้นกด <b>•••</b> → Connections → เลือก integration)
+          แล้วเลือกเป็นที่เก็บ database ด้านล่าง
+        </p>
+
+        <div class="seg">
+          <button class="seg-btn active" data-mode="new">สร้าง database ใหม่</button>
+          <button class="seg-btn" data-mode="existing">ใช้ database เดิม</button>
+        </div>
+
+        <!-- โหมดสร้างใหม่ -->
+        <div id="mode-new" class="mode">
+          <div class="row">
+            <select id="parent-select"><option value="">— เลือก page แม่ —</option></select>
+            <button id="reload-pages" class="btn ghost">โหลดรายการ</button>
+          </div>
+          <button id="migrate-btn" class="btn primary" disabled>สร้าง database</button>
+        </div>
+
+        <!-- โหมดใช้เดิม -->
+        <div id="mode-existing" class="mode" hidden>
+          <p class="muted small">วาง database ID หรือ URL ของ database ที่แชร์ให้ integration แล้ว</p>
+          <div class="row">
+            <input id="existing-db" type="text" placeholder="database id หรือ url">
+            <button id="link-btn" class="btn primary">เชื่อม</button>
+          </div>
+        </div>
+
+        <div id="migrate-status" class="status"></div>
+      </div>
+    </section>
+
+    <!-- STEP 3: settings -->
+    <section class="block" id="step3" data-locked="true">
+      <div class="block-num">3</div>
+      <div class="block-body">
+        <h2>การเตือน</h2>
+        <label class="field">
+          <span>เช็คงานทุก ๆ (นาที)</span>
+          <input id="interval" type="number" min="15" step="5" value="60">
+        </label>
+        <label class="field checkbox">
+          <input id="auto-open" type="checkbox" checked>
+          <span>เด้งหน้าต่าง quest อัตโนมัติเมื่อมีงานถึงกำหนด</span>
+        </label>
+        <label class="field checkbox">
+          <input id="quiet-enabled" type="checkbox" checked>
+          <span>ช่วงเวลาเงียบ (ไม่เด้ง popup)</span>
+        </label>
+        <div class="row quiet-row">
+          <input id="quiet-start" type="time" value="22:00">
+          <span class="muted">ถึง</span>
+          <input id="quiet-end" type="time" value="07:00">
+        </div>
+        <button id="save-settings" class="btn">บันทึกการตั้งค่า</button>
+        <div id="settings-status" class="status"></div>
+      </div>
+    </section>
+
+    <!-- สรุปสถานะ -->
+    <section class="summary" id="summary" hidden>
+      <div class="summary-row"><span>สถานะ</span><b id="sum-state">—</b></div>
+      <div class="summary-row"><span>data source</span><code id="sum-ds">—</code></div>
+      <div class="summary-actions">
+        <button id="open-db" class="link">เปิด database ใน Notion</button>
+        <button id="reset" class="link danger">ล้างการตั้งค่า</button>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+/* theme.css — design tokens ที่ใช้ร่วมกันทุกหน้า (popup / quest / options)
+   ทิศทาง: "focused quest terminal" — พื้นสเลตเข้มสงบ, ทองเป็นสีรางวัล/XP,
+   หยกเป็นสถานะสำเร็จ, โมโนสเปซให้กลิ่นคีย์บอร์ด/เทอร์มินัล */
+
+:root {
+  --bg: #14161c;
+  --bg-raised: #1c1f28;
+  --bg-card: #20242f;
+  --bg-card-hover: #262b38;
+  --border: #2c313d;
+  --border-bright: #3a4150;
+
+  --ink: #e7e9ef;
+  --ink-dim: #9aa0b0;
+  --ink-faint: #646b7d;
+
+  --gold: #e0a106;
+  --gold-soft: #f4c542;
+  --jade: #4fb286;
+  --rose: #e0556b;
+  --violet: #8a7cf2;
+
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", "Noto Sans Thai", "Sarabun", sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, Menlo, monospace;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.45;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* rank chips */
+.rank {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.rank-S { background: rgba(224,85,107,0.16); color: #f08197; }
+.rank-A { background: rgba(224,161,6,0.16); color: var(--gold-soft); }
+.rank-B { background: rgba(138,124,242,0.16); color: var(--violet); }
+.rank-C { background: rgba(100,107,125,0.18); color: var(--ink-dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

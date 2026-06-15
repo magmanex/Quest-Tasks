@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="head">
+      <div class="brand">
+        <span class="brand-mark">🎯</span>
+        <div>
+          <div class="brand-name">Quest Tasks</div>
+          <div class="eyebrow" id="today-label"></div>
+        </div>
+      </div>
+      <button class="lvl" id="lvl-badge" title="ดูความคืบหน้า">
+        <span class="lvl-num" id="lvl-num">1</span>
+        <span class="lvl-cap">LV</span>
+      </button>
+    </header>
+
+    <div class="xp-row">
+      <div class="xp-track"><div class="xp-fill" id="xp-fill"></div></div>
+      <div class="xp-meta">
+        <span id="xp-text">0 / 100 XP</span>
+        <span id="streak-text">🔥 0 วัน</span>
+      </div>
+    </div>
+
+    <!-- ช่องเพิ่ม quest เร็ว -->
+    <div class="quick">
+      <input id="quick-input" type="text" autocomplete="off"
+             placeholder="เพิ่ม quest… เช่น โอนเงินสไมล์ พรุ่งนี้">
+      <button id="quick-add" class="quick-btn">เพิ่ม</button>
+    </div>
+    <div class="quick-hint" id="quick-hint"></div>
+
+    <!-- รายการงานถึงกำหนด -->
+    <main id="list" class="list"></main>
+
+    <footer class="foot">
+      <button id="open-options" class="link">ตั้งค่า</button>
+      <button id="refresh" class="link">รีเฟรช</button>
+    </footer>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
