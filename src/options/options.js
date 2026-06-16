@@ -1,7 +1,7 @@
 // options.js — หน้าตั้งค่า + flow migrate ครั้งแรก
 // หน้านี้เป็น extension page จึงเรียก notion.js ตรงได้ (ไม่ติด CORS)
-import * as notion from "./lib/notion.js";
-import { getConfig, setConfig } from "./lib/storage.js";
+import * as notion from "../lib/notion.js";
+import { getConfig, setConfig } from "../lib/storage.js";
 
 const $ = (id) => document.getElementById(id);
 

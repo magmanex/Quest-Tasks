@@ -1,6 +1,6 @@
 // node test/thaiDate.test.mjs  — assert-based, no framework
 import assert from "node:assert";
-import { parseQuickAdd } from "../lib/thaiDate.js";
+import { parseQuickAdd } from "../src/lib/thaiDate.js";
 
 const base = "2026-06-16";
 const p = (s) => parseQuickAdd(s, base);

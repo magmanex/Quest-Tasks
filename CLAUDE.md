@@ -10,24 +10,28 @@ Chrome extension (Manifest V3) ที่ sync รายการ task กับ 
 
 ## สถาปัตยกรรม
 
+โค้ดทั้งหมดอยู่ใต้ `src/` ยกเว้น `manifest.json` + `icons/` ที่ Chrome บังคับให้อยู่ root
+path ใน manifest/HTML/import จึงอ้างแบบ relative (HTML อ้าง `../theme.css`, background เปิด `src/quest/quest.html`)
+
 ```
-manifest.json        MV3 config. host_permissions = https://api.notion.com/*
-background.js        service worker (type: module) — แกนกลาง
-  ├─ alarms          เช็คงานค้างเป็นระยะ (chrome.alarms, ขั้นต่ำ 15 นาที)
-  ├─ badge           เลขงานค้างบนไอคอน
-  ├─ quest window    เด้ง quest.html (popup window) เมื่อมีงานถึงกำหนด
-  ├─ context menu    "เพิ่มเป็น quest" จากข้อความที่เลือก
-  └─ message API     popup/quest ส่ง message มาที่นี่ (queryDue/add/complete/snooze/...)
-
-lib/notion.js        ตัวห่อ Notion REST API ทั้งหมด (อยู่ที่เดียว)
-lib/storage.js       config + game state (chrome.storage.local) + ตรรกะ XP/level/streak
-lib/thaiDate.js      parser วันที่ภาษาไทย + helper จัดการวันที่ (timezone Asia/Bangkok)
-
-popup.html/js/css    popup หลัก: ดูงานวันนี้ + quick-add + XP bar
-quest.html/js/css    หน้าต่าง quest แบบเกม (signature UI) + animation + เสียง
-options.html/js/css  หน้าตั้งค่า + flow migrate ครั้งแรก
-theme.css            design tokens ใช้ร่วมทุกหน้า
-icons/               ไอคอน 16/48/128
+manifest.json            MV3 config (root). service_worker=src/background.js,
+                         popup=src/popup/popup.html, options=src/options/options.html
+icons/                   ไอคอน 16/48/128 (root — manifest อ้างถึง)
+src/
+  background.js          service worker (type: module) — แกนกลาง
+    ├─ alarms            เช็คงานค้างเป็นระยะ (chrome.alarms, ขั้นต่ำ 15 นาที)
+    ├─ badge             เลขงานค้างบนไอคอน
+    ├─ quest window      เด้ง src/quest/quest.html (popup window) เมื่อมีงานถึงกำหนด
+    ├─ context menu      "เพิ่มเป็น quest" จากข้อความที่เลือก
+    └─ message API       popup/quest ส่ง message มาที่นี่
+                         (status/queryDue/queryUpcoming/add/complete/snooze/setDate/rescheduleAlarm/refreshBadge)
+  lib/notion.js          ตัวห่อ Notion REST API ทั้งหมด (อยู่ที่เดียว)
+  lib/storage.js         config + game state (chrome.storage.local) + ตรรกะ XP/level/streak/rankLetter
+  lib/thaiDate.js        parser วันที่ภาษาไทย + helper จัดการวันที่ (timezone Asia/Bangkok)
+  popup/   (.html/js/css)   popup หลัก: ดูงานวันนี้ + quick-add + XP bar
+  quest/   (.html/js/css)   หน้าต่าง quest แบบเกม (signature UI) + animation + เสียง
+  options/ (.html/js/css)   หน้าตั้งค่า + flow migrate ครั้งแรก
+  theme.css              design tokens ใช้ร่วมทุกหน้า (HTML อ้าง ../theme.css)
 ```
 
 ## กฎเหล็กของ Notion API (อ่านก่อนแตะโค้ดที่เรียก Notion)
@@ -52,6 +56,12 @@ icons/               ไอคอน 16/48/128
 
 5. **Timezone** — คำนวณ "วันนี้" ด้วย `bangkokToday()` เสมอ (Asia/Bangkok) อย่าใช้ UTC ตรง ๆ
 
+6. **วันที่ของ task มี 2 รูปแบบ** — เก็บใน Notion date property เป็น `date.start`:
+   - **date-only** `"2026-06-17"` (งานทั้งวัน)
+   - **datetime** `"2026-06-17T12:00:00+07:00"` (งานที่ตั้งเวลา — ต้องมี offset `+07:00` เสมอ)
+   โค้ดทุกที่ที่จัดการวันต้องรองรับทั้งสองแบบ: ตัดส่วนวันด้วย `.slice(0,10)`, ตรวจมีเวลาด้วย `.length > 10`,
+   ส่วนเวลาคือ `.slice(10)` (`"T12:00:00+07:00"`) ดู `parseQuickAdd` (สร้าง) และ `isRipe` (background) เป็นตัวอย่าง
+
 ## convention ในโค้ด
 
 - ชื่อ property ของ database เก็บใน `propMap` (storage) ไม่ hardcode — โค้ดอ้างชื่อผ่าน propMap เสมอ
@@ -59,7 +69,15 @@ icons/               ไอคอน 16/48/128
 - ทุก action ที่กระทบ badge / game state route ผ่าน background message API เพื่อให้ state เป็น single source
 - error จาก Notion ใช้ class `NotionError` (มี status + code) — ดักได้ละเอียด เช่น 401 = token เสีย
 - เก็บ key ทั้งหมดผ่าน `getConfig()/setConfig()` ไม่เรียก chrome.storage ตรงนอก storage.js
-  (ยกเว้น reset ที่ใช้ chrome.storage.local.clear())
+  (ยกเว้น reset ที่ใช้ chrome.storage.local.clear() และ `taskOrder` ที่ popup เขียนตรง — ดูด้านล่าง)
+- **ลำดับ task ภายในวันเป็น local-only** — Notion ไม่มี property ลำดับ popup.js เก็บลำดับใน
+  `chrome.storage.local.taskOrder` (array ของ page id) แล้ว `sortByOrder()` เรียงตามนั้น id ที่ไม่อยู่ในลิสต์
+  เรียงตามวันเตือน (ต่อท้าย) การย้าย "วัน" ต่างหากที่ sync เข้า Notion (action `setDate`)
+- **quest window เด้งตามเวลา** — `background.js` เก็บ `shownQuestState {date, ids}` กันเด้งซ้ำราย task ต่อวัน
+  และใช้ `isRipe()` ตัดสินว่า task ถึงเวลาเด้งหรือยัง (date-only = ทั้งวัน, datetime = ต้องเลยเวลา) ความละเอียด
+  = poll interval (ขั้นต่ำ 15 นาที ของ chrome.alarms) จะแม่นกว่านี้ต้องทำ per-task alarm (SW ตายง่าย ไม่คุ้ม)
+
+> รายละเอียดฟีเจอร์ + ตาราง message API + จุดในโค้ด: ดู [`docs/FEATURES.md`](docs/FEATURES.md)
 
 ## วิธี load / ทดสอบ
 
@@ -70,8 +88,8 @@ icons/               ไอคอน 16/48/128
 
 ## สิ่งที่ยังไม่ได้ทำ / TODO (สำคัญ)
 
-- [ ] **ยังไม่ได้ทดสอบบน browser จริง** — โค้ดผ่าน syntax check + unit test ของ parser แล้ว
-      แต่ flow ทั้งหมด (migrate, alarm, quest window) ต้อง verify ด้วยมือใน Chrome
+- [x] **ทดสอบบน browser จริงแล้ว (v0.3)** — flow หลัก (quick-add, alarm/quest pop, drag-drop, date edit) ใช้งานได้
+      ยังควร verify migrate flow + edge ของ recurring/pagination เมื่อแตะส่วนนั้น
 - [ ] **Recurring quest** — งานประจำ (เช่นโอนเงินทุกสิ้นเดือน) ยังไม่ทำ ต้องเพิ่ม property เช่น
       "ทำซ้ำ" แล้วตอน complete ให้ createTask occurrence ถัดไป (Notion ไม่มี recurrence ใน API)
 - [ ] **Offline queue + retry** — ถ้า write fail (เน็ตหลุด / service worker ถูก kill) ยังไม่มี queue
@@ -83,4 +101,6 @@ icons/               ไอคอน 16/48/128
 - [ ] **UI แก้ propMap** — ถ้าใช้ database เดิมที่ชื่อ column ต่าง ต้องแก้ใน code/storage เอง ยังไม่มี UI
 - [ ] **OAuth** — ตอนนี้ใช้ internal token (plaintext ใน storage) ปลอดภัยพอสำหรับใช้เอง
       แต่ถ้าจะ publish ลง Chrome Web Store ต้องทำ OAuth flow + backend แลก token
-- [ ] **Two-way sync ที่สมบูรณ์** — ตอนนี้แค่ poll งานที่ถึงกำหนด ไม่ได้ดึงงานอนาคต/แก้ไขจากฝั่ง Notion มาโชว์
+- [ ] **Two-way sync ที่สมบูรณ์** — ดึงงานล่วงหน้า 3 วัน (`queryUpcoming`) + แก้วัน/เลื่อนจาก popup ได้แล้ว
+      แต่ยังไม่ sync การแก้ไขฝั่ง Notion กลับมาแบบ realtime (ต้องกด refresh / รอ alarm)
+- [ ] **เวลาในงาน sync ลำดับข้ามเครื่อง** — `taskOrder` เป็น local-only ถ้าใช้หลายเครื่องลำดับไม่ตรงกัน

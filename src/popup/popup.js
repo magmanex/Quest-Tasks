@@ -1,6 +1,6 @@
 // popup.js
-import { parseQuickAdd, bangkokToday, addDays } from "./lib/thaiDate.js";
-import { levelFromXp } from "./lib/storage.js";
+import { parseQuickAdd, bangkokToday, addDays } from "../lib/thaiDate.js";
+import { levelFromXp, rankLetter } from "../lib/storage.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -14,7 +14,7 @@ const send = (msg) => {
   });
 };
 
-const rankClass = (rank) => "rank-" + ((rank || "B").trim().charAt(0).toUpperCase());
+const rankClass = (rank) => "rank-" + rankLetter(rank);
 
 function fmtDate(iso, today) {
   if (!iso) return "";
@@ -162,7 +162,7 @@ function renderList(tasks, today) {
     card.className = "card" + (overdue ? " overdue" : "");
     card.innerHTML = `
       <div class="card-top">
-        <span class="rank ${rankClass(t.rank)}">${(t.rank || "B").charAt(0)}</span>
+        <span class="rank ${rankClass(t.rank)}">${rankLetter(t.rank)}</span>
         <span class="card-title"></span>
         <span class="card-date ${overdue ? "late" : ""}">${overdue ? "เลยมา " : ""}${fmtDate(t.date, today)}</span>
       </div>
@@ -186,7 +186,7 @@ const expandedDays = new Set(); // จำว่าวันไหนกางอ
 function makeUpcomingRow(t) {
   const row = document.createElement("div");
   row.className = "up-item";
-  row.innerHTML = `<span class="rank ${rankClass(t.rank)}">${(t.rank || "B").charAt(0)}</span><span class="up-item-title"></span><input type="date" class="up-date" title="เปลี่ยนวัน">`;
+  row.innerHTML = `<span class="rank ${rankClass(t.rank)}">${rankLetter(t.rank)}</span><span class="up-item-title"></span><input type="date" class="up-date" title="เปลี่ยนวัน">`;
   row.querySelector(".up-item-title").textContent = t.title;
   const dateInput = row.querySelector(".up-date");
   dateInput.value = t.date.slice(0, 10);

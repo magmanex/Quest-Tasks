@@ -110,7 +110,7 @@ function openQuestWindow() {
 
 function createQuestWindow() {
   chrome.windows.create(
-    { url: "quest.html", type: "popup", width: 440, height: 640 },
+    { url: "src/quest/quest.html", type: "popup", width: 440, height: 640 },
     (win) => { questWindowId = win.id; }
   );
 }

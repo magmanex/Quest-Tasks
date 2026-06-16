@@ -69,10 +69,14 @@ export async function isSetupComplete() {
 
 // --- ตรรกะเกม ---
 
+// ตัวอักษรระดับ (S/A/B/C) จากค่า rank เต็ม เช่น "B - ปกติ" -> "B"; ว่าง -> "B"
+export function rankLetter(rankValue) {
+  return (rankValue || "B").trim().charAt(0).toUpperCase();
+}
+
 // XP ที่ได้ต่อ quest ตามระดับ (rank prefix: S/A/B/C)
 export function xpForRank(rankValue) {
-  const r = (rankValue || "").trim().charAt(0).toUpperCase();
-  return ({ S: 40, A: 25, B: 15, C: 10 })[r] ?? 15;
+  return ({ S: 40, A: 25, B: 15, C: 10 })[rankLetter(rankValue)] ?? 15;
 }
 
 // เลเวลคิดแบบ XP สะสมง่าย ๆ: ต้องใช้ level*100 XP ต่อเลเวล

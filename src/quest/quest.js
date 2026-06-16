@@ -1,6 +1,6 @@
 // quest.js — ตรรกะหน้าต่าง quest แบบเกม
-import { bangkokToday } from "./lib/thaiDate.js";
-import { levelFromXp } from "./lib/storage.js";
+import { bangkokToday } from "../lib/thaiDate.js";
+import { levelFromXp, rankLetter } from "../lib/storage.js";
 
 const $ = (id) => document.getElementById(id);
 const send = (msg) => chrome.runtime.sendMessage(msg);
@@ -52,7 +52,7 @@ function renderGame(game) {
   $("q-streak").textContent = `🔥 ${game.streak}`;
 }
 
-const rankSuffix = (rank) => ((rank || "B").trim().charAt(0).toUpperCase());
+const rankSuffix = rankLetter;
 
 function fmtMeta(t) {
   const overdue = t.date && t.date < today;
