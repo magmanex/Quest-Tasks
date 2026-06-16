@@ -113,6 +113,14 @@ src/
 2. กดไอคอน → "เปิดหน้าตั้งค่า" → ทำตาม step 1-3
 3. ดู log: service worker ดูที่ `chrome://extensions` → ปุ่ม "service worker"; popup/quest/options คลิกขวา → Inspect
 4. ทดสอบ alarm เร็ว ๆ: เปลี่ยน interval เป็น 15 หรือเรียก `chrome.alarms` ใน console ของ service worker
+5. unit test: `node test/thaiDate.test.mjs` (หรือสั่ง `/test`) — ครอบ `parseQuickAdd`
+
+## Claude config (`.claude/` — track ใน repo ยกเว้น `settings.local.json`)
+
+- `settings.json` — shared permission allowlist (คำสั่ง read/test/branch ที่ปลอดภัย) ลด prompt
+- `skills/feature/` — skill `/feature <slug>` (branch → KB update → push → PR)
+- `commands/test.md` — command `/test` รัน unit test
+- `settings.local.json` — permission เฉพาะเครื่อง (gitignore ไว้ ไม่แชร์)
 
 ## สิ่งที่ยังไม่ได้ทำ / TODO (สำคัญ)
 

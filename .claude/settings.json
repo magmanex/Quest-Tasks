@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node test/:*)",
+      "Bash(node --check:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git switch:*)",
+      "Bash(git branch:*)",
+      "Bash(git mv:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)"
+    ]
+  }
+}
