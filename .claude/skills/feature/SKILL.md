@@ -31,7 +31,21 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
 
 If the change touches `lib/thaiDate.js` parsing, run `node test/thaiDate.test.mjs` before committing.
 
-## 3. Open the PR (when feature is done)
+## 3. Update the knowledge base (REQUIRED before any push)
+
+Before pushing, reflect what changed into the context docs so the next Claude
+session understands the project without re-reading all the code (saves tokens):
+
+- **CLAUDE.md** — file tree, architecture, conventions, message API list, rules,
+  TODO/"not done yet" list. Tick or add items that this feature changed.
+- **docs/FEATURES.md** — add a section for the new feature, pointing at the
+  files/functions that implement it.
+- **README.md** — only if user-visible behavior changed.
+
+Edit only what actually changed this round; don't rewrite whole files. If the
+change has no context impact (typo/format), note "no KB change" and skip.
+
+## 4. Open the PR (when feature is done)
 
 ```
 git push -u origin feature/<slug>
@@ -43,7 +57,7 @@ gh pr create --base main --fill
   `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
 - Report the PR URL back to the user. Do **not** merge unless they ask.
 
-## 4. After merge (optional)
+## 5. After merge (optional)
 
 ```
 git switch main && git pull

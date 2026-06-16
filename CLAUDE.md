@@ -86,12 +86,26 @@ src/
 1. แตกจาก `main` ล่าสุด: `git switch main && git pull && git switch -c feature/<slug>`
    (`<slug>` = kebab-case สั้น ๆ เช่น `feature/recurring-quest`)
 2. ทำงาน + commit บน branch (commit message ลงท้ายด้วย `Co-Authored-By:` ตามปกติ)
-3. `git push -u origin feature/<slug>`
-4. เปิด PR เข้า `main`: `gh pr create --base main --fill` (หรือใส่ title/body เอง)
-5. merge ผ่าน PR แล้วลบ branch — อย่า push main ตรง
+3. **อัพเดท knowledge base ก่อน push เสมอ** (ดูด้านล่าง)
+4. `git push -u origin feature/<slug>`
+5. เปิด PR เข้า `main`: `gh pr create --base main --fill` (หรือใส่ title/body เอง)
+6. merge ผ่าน PR แล้วลบ branch — อย่า push main ตรง
 
 ยกเว้นได้เฉพาะงานจิ๋ม (typo / แก้ comment / docs) ที่ commit `main` ตรงได้
 ใช้ skill `/feature <ชื่อฟีเจอร์>` เพื่อเริ่ม flow นี้อัตโนมัติ
+
+### กฎ: อัพเดท knowledge base ก่อน push ทุกครั้ง
+
+**ก่อน `git push` ใด ๆ** (ทั้ง branch และ main) ต้องอัพเดทเอกสารบริบทให้ตรงกับโค้ดล่าสุดก่อน
+เป้าหมาย: Claude ใน session ถัดมาอ่านแล้วเข้าใจบริบทได้เลย ไม่ต้องไล่อ่านโค้ดใหม่ให้เปลือง token
+
+ปรับเฉพาะที่ "เปลี่ยนจริง" ในรอบนั้น — ไม่ต้องเขียนใหม่ทั้งไฟล์:
+- **`CLAUDE.md`** — โครงสร้างไฟล์, สถาปัตยกรรม, convention, message API, กฎ, รายการ TODO/สิ่งที่ยังไม่ทำ
+  (เพิ่มฟีเจอร์ → ติ๊ก/เพิ่มใน TODO; เพิ่ม message action → เพิ่มในลิสต์ของ background; เพิ่ม/ย้ายไฟล์ → แก้ tree)
+- **`docs/FEATURES.md`** — รายละเอียดฟีเจอร์ + จุดในโค้ด (เพิ่มฟีเจอร์ใหม่ → เพิ่ม section + ชี้ไฟล์/ฟังก์ชัน)
+- ถ้าเปลี่ยนพฤติกรรมที่ผู้ใช้เห็น → อัพเดท `README.md` ด้วย
+
+ถ้ารอบนั้นไม่กระทบบริบท (เช่นแก้ typo/format) เขียนกำกับใน commit/PR ว่า "no KB change" ได้
 
 ## วิธี load / ทดสอบ
 
