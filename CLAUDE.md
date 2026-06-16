@@ -79,6 +79,20 @@ src/
 
 > รายละเอียดฟีเจอร์ + ตาราง message API + จุดในโค้ด: ดู [`docs/FEATURES.md`](docs/FEATURES.md)
 
+## Git workflow (กฎ — ต้องทำตาม)
+
+**ทุกฟีเจอร์ใหม่ต้องแตก branch + เปิด PR ห้าม commit ฟีเจอร์ลง `main` ตรง ๆ**
+
+1. แตกจาก `main` ล่าสุด: `git switch main && git pull && git switch -c feature/<slug>`
+   (`<slug>` = kebab-case สั้น ๆ เช่น `feature/recurring-quest`)
+2. ทำงาน + commit บน branch (commit message ลงท้ายด้วย `Co-Authored-By:` ตามปกติ)
+3. `git push -u origin feature/<slug>`
+4. เปิด PR เข้า `main`: `gh pr create --base main --fill` (หรือใส่ title/body เอง)
+5. merge ผ่าน PR แล้วลบ branch — อย่า push main ตรง
+
+ยกเว้นได้เฉพาะงานจิ๋ม (typo / แก้ comment / docs) ที่ commit `main` ตรงได้
+ใช้ skill `/feature <ชื่อฟีเจอร์>` เพื่อเริ่ม flow นี้อัตโนมัติ
+
 ## วิธี load / ทดสอบ
 
 1. `chrome://extensions` → เปิด Developer mode → Load unpacked → เลือกโฟลเดอร์นี้
