@@ -57,7 +57,21 @@ async function loadOrder() {
 }
 function sortByOrder(tasks) {
   const idx = (id) => { const i = orderIds.indexOf(id); return i === -1 ? Infinity : i; };
-  return [...tasks].sort((a, b) => idx(a.id) - idx(b.id)); // stable: id ที่ไม่รู้จักคงลำดับเดิม
+  // tiebreak สำหรับ id ที่ผู้ใช้ยังไม่จัดลำดับเอง: เรียงตามวัน → มีเวลาก่อน → เวลาน้อยไปมาก
+  // งานไม่ระบุเวลา (date-only) ต่อท้ายงานที่มีเวลาในวันเดียวกัน
+  const key = (t) => {
+    const d = t.date || "9999-12-31";          // ไม่มีวัน → ท้ายสุด
+    const timed = d.length > 10;
+    return { day: d.slice(0, 10), timed, time: timed ? d.slice(10) : "" };
+  };
+  return [...tasks].sort((a, b) => {
+    const ka = key(a), kb = key(b);
+    if (ka.timed !== kb.timed) return ka.timed ? -1 : 1;  // มีเวลามาก่อนเสมอ (เหนือลำดับ drag)
+    const di = idx(a.id) - idx(b.id);
+    if (di !== 0 && (idx(a.id) !== Infinity || idx(b.id) !== Infinity)) return di; // ลำดับ drag ภายในกลุ่ม
+    if (ka.day !== kb.day) return ka.day < kb.day ? -1 : 1;
+    return ka.time < kb.time ? -1 : ka.time > kb.time ? 1 : 0;
+  });
 }
 // จัดลำดับใหม่จากลำดับจริงใน DOM ของ container (วันเดียวกัน) แล้วเอา dragId ไปวางก่อน targetId
 // อ่านจาก DOM ทำให้ item ที่ไม่ได้แตะคงตำแหน่งเดิม (ไม่ลอยขึ้นบน)
