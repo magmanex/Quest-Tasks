@@ -58,10 +58,11 @@ function fmtMeta(t) {
   const overdue = t.date && t.date < today;
   if (!t.date) return { text: "ไม่มีกำหนด", late: false };
   if (overdue) {
-    const [y, m, d] = t.date.split("-").map(Number);
+    const [y, m, d] = t.date.slice(0, 10).split("-").map(Number);
     return { text: `เลยกำหนดมาตั้งแต่ ${d}/${m}`, late: true };
   }
-  return { text: "ครบกำหนดวันนี้", late: false };
+  const time = t.date.length > 10 ? " " + t.date.slice(11, 16) : "";
+  return { text: "ครบกำหนดวันนี้" + time, late: false };
 }
 
 function makeCard(t) {

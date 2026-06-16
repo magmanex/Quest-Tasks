@@ -148,6 +148,12 @@ async function handleMessage(msg) {
       return { ok: true, tasks, game: cfg.game };
     }
 
+    case "queryUpcoming": {
+      const toISO = addDays(today, msg.days || 3);
+      const tasks = await notion.getUpcomingTasks(cfg.token, cfg.dataSourceId, cfg.propMap, today, toISO);
+      return { ok: true, tasks };
+    }
+
     case "add": {
       const task = await notion.createTask(cfg.token, cfg.dataSourceId, cfg.propMap, {
         title: msg.title, dateISO: msg.dateISO, rank: msg.rank
