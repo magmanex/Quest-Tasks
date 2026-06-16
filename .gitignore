@@ -12,5 +12,6 @@ desktop.ini
 *.log
 node_modules/
 
-# Claude Code local settings
-.claude/
+# Claude Code: ignore local settings, but track shared skills
+.claude/*
+!.claude/skills/

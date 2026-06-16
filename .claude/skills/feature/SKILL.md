@@ -1,0 +1,53 @@
+---
+name: feature
+description: Start a new feature on its own branch and ship it via a pull request — never commit features straight to main. Use when the user begins any new feature/enhancement, says "ทำฟีเจอร์", "feature ใหม่", "/feature", or asks to branch + open a PR for work in this repo.
+---
+
+# feature — branch-and-PR workflow
+
+This project's rule (see CLAUDE.md → "Git workflow"): **every new feature goes on its
+own branch and merges through a PR. Never commit a feature directly to `main`.**
+
+`gh` is installed and authenticated. Run these steps with Bash.
+
+## 1. Start the branch (before writing feature code)
+
+```
+git switch main && git pull --ff-only
+git switch -c feature/<slug>      # <slug> = short kebab-case, e.g. feature/recurring-quest
+```
+
+- Derive `<slug>` from the feature in 2-4 words.
+- If the working tree is dirty, ask whether to stash/commit first — do not silently discard.
+- If a `feature/<slug>` already exists, just `git switch` to it.
+
+## 2. Build the feature
+
+Implement on the branch. Commit in logical chunks. End every commit message with:
+
+```
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+```
+
+If the change touches `lib/thaiDate.js` parsing, run `node test/thaiDate.test.mjs` before committing.
+
+## 3. Open the PR (when feature is done)
+
+```
+git push -u origin feature/<slug>
+gh pr create --base main --fill
+```
+
+- Prefer `--fill` (uses commits). For a richer PR, pass `--title` / `--body` instead.
+- End any PR body you write with:
+  `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
+- Report the PR URL back to the user. Do **not** merge unless they ask.
+
+## 4. After merge (optional)
+
+```
+git switch main && git pull
+git branch -d feature/<slug>
+```
+
+Exception: trivial typo / comment / docs edits may go straight to `main`.
