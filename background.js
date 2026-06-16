@@ -195,6 +195,13 @@ async function handleMessage(msg) {
       return { ok: true, remaining: tasks.length };
     }
 
+    case "setDate": {
+      await notion.snoozeTask(cfg.token, msg.pageId, cfg.propMap, msg.dateISO);
+      const tasks = await notion.getDueTasks(cfg.token, cfg.dataSourceId, cfg.propMap, today);
+      updateBadge(tasks.length);
+      return { ok: true, remaining: tasks.length };
+    }
+
     case "rescheduleAlarm":
       await ensureAlarm();
       return { ok: true };

@@ -77,7 +77,7 @@ function makeCard(t) {
     <div class="qcard-meta ${meta.late ? "late" : ""}">${meta.text}</div>
     <div class="qcard-actions">
       <button class="qbtn qbtn-done">✓ เคลียร์ quest</button>
-      <button class="qbtn qbtn-snooze">เลื่อน +1 วัน</button>
+      <button class="qbtn qbtn-snooze">เลื่อนไปพรุ่งนี้</button>
     </div>
     <div class="stamp">CLEARED</div>`;
   card.querySelector(".qcard-title").textContent = t.title;

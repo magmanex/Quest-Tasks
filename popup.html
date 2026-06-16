@@ -6,7 +6,9 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
+  <div class="syncbar" id="syncbar"></div>
   <div class="wrap">
+   <div class="topbar">
     <header class="head">
       <div class="brand">
         <span class="brand-mark">🎯</span>
@@ -36,18 +38,14 @@
       <button id="quick-add" class="quick-btn">เพิ่ม</button>
     </div>
     <div class="quick-hint" id="quick-hint"></div>
+   </div>
 
     <!-- รายการงานถึงกำหนด -->
     <main id="list" class="list"></main>
 
     <!-- รายการล่วงหน้า (พรุ่งนี้ → +3 วัน) -->
     <section class="upcoming" id="upcoming" hidden>
-      <button class="up-toggle" id="up-toggle" aria-expanded="false">
-        <span class="up-caret">▸</span>
-        <span class="up-label">ล่วงหน้า</span>
-        <span class="up-count" id="up-count">0</span>
-      </button>
-      <div class="up-body" id="up-body" hidden></div>
+      <div class="up-body" id="up-body"></div>
     </section>
 
     <footer class="foot">
