@@ -56,11 +56,27 @@ async function runDueCheck() {
   if (!cfg.settings.autoOpenQuestWindow) return;
   if (isQuietNow(cfg.settings.quietHours)) return;
 
-  const today = bangkokToday();
-  if (cfg.lastQuestShownDate === today) return; // เด้งไปแล้ววันนี้ ไม่กวนซ้ำ
+  // เด้งเฉพาะงานที่ "ถึงเวลา" แล้ว: ไม่มีเวลา = ทั้งวัน, มีเวลา = ต้องเลยเวลาที่ตั้ง
+  const ripe = tasks.filter((t) => isRipe(t, Date.now()));
+  if (ripe.length === 0) return;
 
-  await setConfig({ lastQuestShownDate: today });
+  const today = bangkokToday();
+  let shown = cfg.shownQuestState;
+  if (!shown || shown.date !== today) shown = { date: today, ids: [] }; // วันใหม่ -> reset
+
+  const fresh = ripe.filter((t) => !shown.ids.includes(t.id));
+  if (fresh.length === 0) return; // งานที่ถึงเวลาเด้งไปครบแล้ว ไม่กวนซ้ำ
+
+  shown.ids = [...shown.ids, ...fresh.map((t) => t.id)];
+  await setConfig({ shownQuestState: shown });
   openQuestWindow();
+}
+
+// งานถึงเวลาเด้งหรือยัง — date-only ถือว่าถึงทั้งวัน, datetime ต้องเลยเวลาที่ตั้งแล้ว
+// (offset +07:00 ใน dateISO ทำให้ new Date() ได้ instant ที่ถูกต้องไม่ขึ้นกับ timezone เครื่อง)
+function isRipe(task, nowMs) {
+  if (!task.date || task.date.length <= 10) return true;
+  return new Date(task.date).getTime() <= nowMs;
 }
 
 // ---------- badge ----------
