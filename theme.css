@@ -75,6 +75,18 @@ select:focus-visible {
 .rank-B { background: rgba(138,124,242,0.16); color: var(--violet); }
 .rank-C { background: rgba(100,107,125,0.18); color: var(--ink-dim); }
 
+/* scrollbar เข้าธีม: รางกลืนพื้น, thumb สีเส้นขอบ, hover สว่างขึ้น */
+* { scrollbar-width: thin; scrollbar-color: var(--border-bright) transparent; } /* Firefox */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-bright);
+  border-radius: 6px;
+  border: 2px solid var(--bg); /* เว้นขอบให้ thumb ดูบางลอย */
+}
+::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); }
+::-webkit-scrollbar-corner { background: transparent; }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
