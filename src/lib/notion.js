@@ -99,6 +99,67 @@ export async function resolveDataSourceId(token, databaseId) {
   return id;
 }
 
+// สร้าง database ใหม่เป็น subpage ใต้ parentPageId สำหรับเก็บ "อ่านทีหลัง"
+// แท็กเป็น multi_select (เผื่อใส่ได้หลายแท็ก) และมี rich_text สำหรับจดบันทึกสั้น ๆ
+// ไม่มี date property — เรียงตาม created_time (built-in timestamp ของ Notion) แทน
+export async function createReadingDatabase(token, parentPageId, propMap) {
+  const data = await call(token, "/databases", "POST", {
+    parent: { type: "page_id", page_id: parentPageId },
+    title: [{ type: "text", text: { content: "📚 อ่านทีหลัง" } }],
+    initial_data_source: {
+      properties: {
+        [propMap.title]: { title: {} },
+        [propMap.url]: { url: {} },
+        [propMap.tag]: { multi_select: {} },
+        [propMap.done]: { checkbox: {} },
+        [propMap.note]: { rich_text: {} }
+      }
+    }
+  });
+  const dataSourceId = data?.data_sources?.[0]?.id;
+  if (!dataSourceId) {
+    throw new NotionError("สร้าง database แล้วแต่หา data_source_id ไม่เจอ", 500);
+  }
+  return { databaseId: data.id, dataSourceId };
+}
+
+// เพิ่มเรื่องที่จะอ่านทีหลัง
+export async function createReadingItem(token, dataSourceId, propMap, { title, url, tag }) {
+  const properties = {
+    [propMap.title]: { title: [{ text: { content: title } }] },
+    [propMap.done]: { checkbox: false }
+  };
+  if (url) properties[propMap.url] = { url };
+  if (tag) properties[propMap.tag] = { multi_select: [{ name: tag }] };
+
+  const page = await call(token, "/pages", "POST", {
+    parent: { type: "data_source_id", data_source_id: dataSourceId },
+    properties
+  });
+  return normalizeReadingItem(page, propMap);
+}
+
+// ดึงรายการที่ยังไม่อ่าน เรียงใหม่สุดก่อน (created_time)
+export async function getUnreadItems(token, dataSourceId, propMap) {
+  const data = await call(token, `/data_sources/${dataSourceId}/query`, "POST", {
+    filter: { property: propMap.done, checkbox: { equals: false } },
+    sorts: [{ timestamp: "created_time", direction: "descending" }]
+  });
+  return (data.results || []).map(page => normalizeReadingItem(page, propMap));
+}
+
+// mark ว่าอ่านแล้ว
+export async function markReadItem(token, pageId, propMap) {
+  return call(token, `/pages/${pageId}`, "PATCH", {
+    properties: { [propMap.done]: { checkbox: true } }
+  });
+}
+
+// archive ออกจาก database (ลบแบบ soft — กู้คืนได้ใน Notion trash)
+export async function archiveReadingItem(token, pageId) {
+  return call(token, `/pages/${pageId}`, "PATCH", { archived: true });
+}
+
 // ดึงงานที่ถึงกำหนด: วันเตือน <= วันนี้ และยังไม่เสร็จ
 export async function getDueTasks(token, dataSourceId, propMap, todayISO) {
   const data = await call(token, `/data_sources/${dataSourceId}/query`, "POST", {
@@ -172,6 +233,23 @@ function normalizeTask(page, propMap) {
     date: dateProp?.date?.start || null,
     rank: rankProp?.select?.name || null,
     url: page.url
+  };
+}
+
+function normalizeReadingItem(page, propMap) {
+  const props = page.properties || {};
+  const titleProp = props[propMap.title];
+  const urlProp = props[propMap.url];
+  const tagProp = props[propMap.tag];
+  const doneProp = props[propMap.done];
+  return {
+    id: page.id,
+    title: titleProp?.title?.map(t => t.plain_text).join("") || "(ไม่มีชื่อ)",
+    url: urlProp?.url || null,
+    tags: (tagProp?.multi_select || []).map(t => t.name),
+    done: doneProp?.checkbox || false,
+    createdTime: page.created_time,
+    notionUrl: page.url
   };
 }
 

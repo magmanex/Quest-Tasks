@@ -329,6 +329,7 @@ async function load() {
 $("quick-add").addEventListener("click", quickAdd);
 $("quick-input").addEventListener("keydown", (e) => { if (e.key === "Enter") quickAdd(); });
 $("open-options").addEventListener("click", () => chrome.runtime.openOptionsPage());
+$("open-reading").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("src/reading/reading.html") }));
 $("lvl-badge").addEventListener("click", () => chrome.runtime.openOptionsPage());
 $("refresh").addEventListener("click", async () => {
   const btn = $("refresh");

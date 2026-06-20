@@ -33,6 +33,7 @@ $("test-btn").addEventListener("click", async () => {
     setStatus($("token-status"), `เชื่อมต่อสำเร็จ: ${me.name || me.bot?.owner?.type || "integration"}`, "ok");
     lock("step2", false);
     lock("step3", false);
+    lock("step4", false);
     loadPages();
   } catch (e) {
     setStatus($("token-status"), `ล้มเหลว: ${e.message}`, "err");
@@ -40,9 +41,9 @@ $("test-btn").addEventListener("click", async () => {
 });
 
 // ---------- STEP 2: สลับโหมด ----------
-document.querySelectorAll(".seg-btn").forEach(btn => {
+document.querySelectorAll("#step2 .seg-btn").forEach(btn => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll("#step2 .seg-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     const mode = btn.dataset.mode;
     $("mode-new").hidden = mode !== "new";
@@ -50,19 +51,32 @@ document.querySelectorAll(".seg-btn").forEach(btn => {
   });
 });
 
-// โหลด page ที่เข้าถึงได้
+// ---------- STEP 4: สลับโหมด ----------
+document.querySelectorAll("#step4 .seg-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#step4 .seg-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    const mode = btn.dataset.readingMode;
+    $("reading-mode-new").hidden = mode !== "new";
+    $("reading-mode-existing").hidden = mode !== "existing";
+  });
+});
+
+// โหลด page ที่เข้าถึงได้ (ใช้ร่วมกันทั้ง quest db และ reading db)
 async function loadPages() {
   if (!token) return;
   setStatus($("migrate-status"), "กำลังโหลดรายการ page…", "busy");
   try {
     const pages = await notion.listAccessiblePages(token);
-    const sel = $("parent-select");
-    sel.innerHTML = '<option value="">— เลือก page แม่ —</option>';
-    pages.forEach(p => {
-      const o = document.createElement("option");
-      o.value = p.id; o.textContent = p.title;
-      sel.appendChild(o);
-    });
+    for (const selId of ["parent-select", "reading-parent-select"]) {
+      const sel = $(selId);
+      sel.innerHTML = '<option value="">— เลือก page แม่ —</option>';
+      pages.forEach(p => {
+        const o = document.createElement("option");
+        o.value = p.id; o.textContent = p.title;
+        sel.appendChild(o);
+      });
+    }
     setStatus($("migrate-status"),
       pages.length ? `พบ ${pages.length} page` : "ยังไม่พบ page — แชร์ page ให้ integration ก่อนแล้วกดโหลดอีกครั้ง",
       pages.length ? "ok" : "err");
@@ -73,6 +87,9 @@ async function loadPages() {
 $("reload-pages").addEventListener("click", loadPages);
 $("parent-select").addEventListener("change", (e) => {
   $("migrate-btn").disabled = !e.target.value;
+});
+$("reading-parent-select").addEventListener("change", (e) => {
+  $("reading-migrate-btn").disabled = !e.target.value;
 });
 
 // สร้าง database (idempotent)
@@ -113,6 +130,41 @@ $("link-btn").addEventListener("click", async () => {
     renderSummary();
   } catch (e) {
     setStatus($("migrate-status"), `เชื่อมไม่ได้: ${e.message}`, "err");
+  }
+});
+
+// สร้าง reading database (idempotent)
+$("reading-migrate-btn").addEventListener("click", async () => {
+  const parentId = $("reading-parent-select").value;
+  if (!parentId) return;
+  const cfg = await getConfig();
+  if (cfg.readingDataSourceId) {
+    setStatus($("reading-migrate-status"), "มี database อยู่แล้ว — ล้างการตั้งค่าก่อนถ้าต้องการสร้างใหม่", "err");
+    return;
+  }
+  setStatus($("reading-migrate-status"), "กำลังสร้าง database…", "busy");
+  $("reading-migrate-btn").disabled = true;
+  try {
+    const { databaseId, dataSourceId } = await notion.createReadingDatabase(token, parentId, cfg.readingPropMap);
+    await setConfig({ readingDatabaseId: databaseId, readingDataSourceId: dataSourceId });
+    setStatus($("reading-migrate-status"), "สร้าง database สำเร็จ 🎉", "ok");
+  } catch (e) {
+    setStatus($("reading-migrate-status"), `สร้างไม่สำเร็จ: ${e.message}`, "err");
+    $("reading-migrate-btn").disabled = false;
+  }
+});
+
+// เชื่อม reading database เดิม
+$("reading-link-btn").addEventListener("click", async () => {
+  const dbId = extractId($("reading-existing-db").value);
+  if (!dbId) return setStatus($("reading-migrate-status"), "ใส่ database id หรือ url", "err");
+  setStatus($("reading-migrate-status"), "กำลังเชื่อม…", "busy");
+  try {
+    const dataSourceId = await notion.resolveDataSourceId(token, dbId);
+    await setConfig({ readingDatabaseId: dbId, readingDataSourceId: dataSourceId });
+    setStatus($("reading-migrate-status"), "เชื่อม database สำเร็จ ✓ (ตรวจชื่อ property ให้ตรงกับที่ตั้งไว้ด้วย)", "ok");
+  } catch (e) {
+    setStatus($("reading-migrate-status"), `เชื่อมไม่ได้: ${e.message}`, "err");
   }
 });
 
@@ -161,7 +213,11 @@ $("reset").addEventListener("click", async () => {
     setStatus($("token-status"), "ใช้ token ที่บันทึกไว้", "ok");
     lock("step2", false);
     lock("step3", false);
+    lock("step4", false);
     loadPages();
+  }
+  if (cfg.readingDataSourceId) {
+    setStatus($("reading-migrate-status"), "เชื่อม database อ่านทีหลังไว้แล้ว ✓", "ok");
   }
   $("interval").value = cfg.settings.checkIntervalMinutes;
   $("auto-open").checked = cfg.settings.autoOpenQuestWindow;

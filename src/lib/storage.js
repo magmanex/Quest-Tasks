@@ -17,6 +17,17 @@ const DEFAULTS = {
     rank: "ระดับ"
   },
 
+  // --- "อ่านทีหลัง" (เมนูแยกจาก quest, database คนละตัว) ---
+  readingDatabaseId: null,
+  readingDataSourceId: null,
+  readingPropMap: {
+    title: "ชื่อเรื่อง",
+    url: "ลิงก์",
+    tag: "แท็ก",
+    done: "อ่านแล้ว",
+    note: "บันทึก"
+  },
+
   // --- การตั้งค่าการเตือน ---
   settings: {
     checkIntervalMinutes: 15,   // ความถี่ที่ service worker เช็คงานค้าง (ขั้นต่ำของ chrome.alarms = 15)
@@ -49,6 +60,7 @@ export async function getConfig() {
     ...DEFAULTS,
     ...stored,
     propMap: { ...DEFAULTS.propMap, ...(stored.propMap || {}) },
+    readingPropMap: { ...DEFAULTS.readingPropMap, ...(stored.readingPropMap || {}) },
     settings: {
       ...DEFAULTS.settings,
       ...(stored.settings || {}),
@@ -65,6 +77,11 @@ export async function setConfig(patch) {
 export async function isSetupComplete() {
   const cfg = await getConfig();
   return Boolean(cfg.token && cfg.dataSourceId);
+}
+
+export async function isReadingSetupComplete() {
+  const cfg = await getConfig();
+  return Boolean(cfg.token && cfg.readingDataSourceId);
 }
 
 // --- ตรรกะเกม ---

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>อ่านทีหลัง — Quest Tasks</title>
+  <link rel="stylesheet" href="../theme.css">
+  <link rel="stylesheet" href="reading.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="head">
+      <div class="brand">
+        <span class="brand-mark">📚</span>
+        <div>
+          <div class="brand-name">อ่านทีหลัง</div>
+          <div class="eyebrow">เก็บลิงก์/บทความที่อยากอ่าน</div>
+        </div>
+      </div>
+      <button id="open-options" class="link">ตั้งค่า</button>
+    </header>
+
+    <!-- เพิ่มรายการเอง (ปกติเพิ่มผ่านคลิกขวา → "เก็บไว้อ่านทีหลัง") -->
+    <div class="quick">
+      <input id="quick-title" type="text" autocomplete="off" placeholder="ชื่อเรื่อง">
+      <input id="quick-url" type="text" autocomplete="off" placeholder="ลิงก์ (ไม่ใส่ก็ได้)">
+      <button id="quick-add" class="quick-btn">เพิ่ม</button>
+    </div>
+
+    <main id="list" class="list"></main>
+  </div>
+
+  <script type="module" src="reading.js"></script>
+</body>
+</html>

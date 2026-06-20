@@ -97,6 +97,40 @@
       </div>
     </section>
 
+    <!-- STEP 4: reading list database -->
+    <section class="block" id="step4" data-locked="true">
+      <div class="block-num">4</div>
+      <div class="block-body">
+        <h2>📚 อ่านทีหลัง</h2>
+        <p class="muted">
+          เมนูแยกจาก quest — เก็บลิงก์/บทความที่อยากอ่าน คลิกขวา → "เก็บไว้อ่านทีหลัง"
+          ใช้ page แม่เดียวกับ quest ก็ได้ หรือเลือกใหม่
+        </p>
+
+        <div class="seg">
+          <button class="seg-btn active" data-reading-mode="new">สร้าง database ใหม่</button>
+          <button class="seg-btn" data-reading-mode="existing">ใช้ database เดิม</button>
+        </div>
+
+        <div id="reading-mode-new" class="mode">
+          <div class="row">
+            <select id="reading-parent-select"><option value="">— เลือก page แม่ —</option></select>
+          </div>
+          <button id="reading-migrate-btn" class="btn primary" disabled>สร้าง database</button>
+        </div>
+
+        <div id="reading-mode-existing" class="mode" hidden>
+          <p class="muted small">วาง database ID หรือ URL ของ database ที่แชร์ให้ integration แล้ว</p>
+          <div class="row">
+            <input id="reading-existing-db" type="text" placeholder="database id หรือ url">
+          </div>
+          <button id="reading-link-btn" class="btn primary">เชื่อม</button>
+        </div>
+
+        <div id="reading-migrate-status" class="status"></div>
+      </div>
+    </section>
+
     <!-- สรุปสถานะ -->
     <section class="summary" id="summary" hidden>
       <div class="summary-row"><span>สถานะ</span><b id="sum-state">—</b></div>
