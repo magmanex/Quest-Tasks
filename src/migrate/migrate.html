@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="../theme.css">
+  <link rel="stylesheet" href="../options/options.css">
+</head>
+<body>
+  <div class="page">
+    <header class="phead">
+      <span class="brand-mark">🛠</span>
+      <div>
+        <h1>จัดการ Database</h1>
+        <div class="eyebrow">สร้าง / เชื่อม / เช็คความพร้อม schema</div>
+      </div>
+    </header>
+
+    <p class="muted" id="no-token-notice" hidden>
+      ยังไม่ได้ตั้งค่า token — ไปหน้า
+      <a id="goto-options" style="cursor:pointer;">ตั้งค่า</a> เพื่อเชื่อมต่อ Notion ก่อน
+    </p>
+
+    <!-- Quest database -->
+    <section class="block">
+      <div class="block-num">🎯</div>
+      <div class="block-body">
+        <h2>Quest Tasks</h2>
+        <p class="muted">
+          แชร์ page สัก 1 หน้าให้ integration ก่อน (ในหน้านั้นกด <b>•••</b> → Connections → เลือก integration)
+          แล้วเลือกเป็นที่เก็บ database ด้านล่าง
+        </p>
+
+        <div class="seg">
+          <button class="seg-btn active" data-mode="new">สร้าง database ใหม่</button>
+          <button class="seg-btn" data-mode="existing">ใช้ database เดิม</button>
+        </div>
+
+        <div id="mode-new" class="mode">
+          <div class="row">
+            <select id="parent-select"><option value="">— เลือก page แม่ —</option></select>
+            <button id="reload-pages" class="btn ghost">โหลดรายการ</button>
+          </div>
+          <button id="migrate-btn" class="btn primary" disabled>สร้าง database</button>
+        </div>
+
+        <div id="mode-existing" class="mode" hidden>
+          <p class="muted small">วาง database ID หรือ URL ของ database ที่แชร์ให้ integration แล้ว</p>
+          <div class="row">
+            <input id="existing-db" type="text" placeholder="database id หรือ url">
+          </div>
+          <button id="link-btn" class="btn primary">เชื่อม</button>
+        </div>
+
+        <div id="migrate-status" class="status"></div>
+
+        <div class="schema-check" id="quest-schema-check" hidden>
+          <div id="quest-schema-status" class="status"></div>
+          <button id="quest-schema-btn" class="btn primary" disabled>เป็นปัจจุบันแล้ว ✓</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reading database -->
+    <section class="block">
+      <div class="block-num">📚</div>
+      <div class="block-body">
+        <h2>อ่านทีหลัง</h2>
+        <p class="muted">
+          เมนูแยกจาก quest — เก็บลิงก์/บทความที่อยากอ่าน คลิกขวา → "เก็บไว้อ่านทีหลัง"
+          ใช้ page แม่เดียวกับ quest ก็ได้ หรือเลือกใหม่
+        </p>
+
+        <div class="seg">
+          <button class="seg-btn active" data-reading-mode="new">สร้าง database ใหม่</button>
+          <button class="seg-btn" data-reading-mode="existing">ใช้ database เดิม</button>
+        </div>
+
+        <div id="reading-mode-new" class="mode">
+          <div class="row">
+            <select id="reading-parent-select"><option value="">— เลือก page แม่ —</option></select>
+          </div>
+          <button id="reading-migrate-btn" class="btn primary" disabled>สร้าง database</button>
+        </div>
+
+        <div id="reading-mode-existing" class="mode" hidden>
+          <p class="muted small">วาง database ID หรือ URL ของ database ที่แชร์ให้ integration แล้ว</p>
+          <div class="row">
+            <input id="reading-existing-db" type="text" placeholder="database id หรือ url">
+          </div>
+          <button id="reading-link-btn" class="btn primary">เชื่อม</button>
+        </div>
+
+        <div id="reading-migrate-status" class="status"></div>
+
+        <div class="schema-check" id="reading-schema-check" hidden>
+          <div id="reading-schema-status" class="status"></div>
+          <button id="reading-schema-btn" class="btn primary" disabled>เป็นปัจจุบันแล้ว ✓</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- สรุปสถานะ -->
+    <section class="summary" id="summary" hidden>
+      <div class="summary-row"><span>quest data source</span><code id="sum-ds">—</code></div>
+      <div class="summary-row"><span>reading data source</span><code id="sum-reading-ds">—</code></div>
+      <div class="summary-actions">
+        <button id="open-db" class="link" hidden>เปิด quest database</button>
+        <button id="open-reading-db" class="link" hidden>เปิด reading database</button>
+        <button id="open-log" class="link" hidden>ดู migration log</button>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="migrate.js"></script>
+</body>
+</html>

@@ -27,15 +27,34 @@ src/
                          (status/queryDue/queryUpcoming/add/complete/snooze/setDate/rescheduleAlarm/refreshBadge/
                           queryUnread/addReading/markRead/archiveReading)
   lib/notion.js          ตัวห่อ Notion REST API ทั้งหมด (อยู่ที่เดียว) — quest functions + reading list functions
+  lib/migrate.js         orchestration ของ create/link/check/update schema + migration log — **pure JS
+                         ไม่แตะ chrome.* เลย** (import แค่ notion.js) ตั้งใจเผื่อพอร์ตไป host อื่นในอนาคต
+                         (เช่น Scriptable บน iOS) ดู "สถาปัตยกรรมแบบ cross-platform" ด้านล่าง
   lib/storage.js         config + game state (chrome.storage.local) + ตรรกะ XP/level/streak/rankLetter
   lib/thaiDate.js        parser วันที่ภาษาไทย + helper จัดการวันที่ (timezone Asia/Bangkok)
   popup/   (.html/js/css)   popup หลัก: 2 tab สลับด้วย bottom nav (เหมือน mobile app) —
                             "Quest" (งานวันนี้ + quick-add + XP bar) / "อ่านทีหลัง" (list + quick-add)
                             ทั้งสอง tab อยู่ใน DOM เดียวกัน สลับด้วย `hidden` attribute ไม่เปิด tab/window ใหม่
   quest/   (.html/js/css)   หน้าต่าง quest แบบเกม (signature UI) + animation + เสียง
-  options/ (.html/js/css)   หน้าตั้งค่า + flow migrate ครั้งแรก (step 1-3 quest, step 4 reading database)
+  options/ (.html/js/css)   หน้าตั้งค่า: token (step 1) + การเตือน (step 2) + ล้างการตั้งค่า — แค่นี้
+                            การจัดการ database (quest/reading) ย้ายไปหน้า migrate แยกแล้ว
+  migrate/ (.html/js/css)   หน้า "จัดการ Database" แยกจาก options — สร้าง/เชื่อม/เช็ค-อัปเดต schema
+                            + migration log ของทั้ง quest กับ reading database (คนละ section ในหน้าเดียว)
+                            migrate.js เป็น Chrome host (DOM + chrome.storage) ที่เรียก lib/migrate.js
   theme.css              design tokens ใช้ร่วมทุกหน้า (HTML อ้าง ../theme.css)
 ```
+
+### สถาปัตยกรรมแบบ cross-platform (เตรียมไว้ ยังไม่ implement จริง)
+
+ตั้งใจให้ใช้ได้นอกเหนือจาก Chrome extension ในอนาคต (เช่น สั่งจาก Scriptable บน iPhone) จึงแยกชั้น:
+- **portable core** — `lib/notion.js` + `lib/migrate.js` ไม่มี `chrome.*`/`document` เลย รับทุกอย่าง
+  (token, parentPageId, schemaDef, ฯลฯ) ผ่าน parameter ตรง ๆ ใช้ `fetch` เปล่า ๆ
+- **host** — `src/migrate/migrate.js` (ของ Chrome) ทำหน้าที่แค่ 2 อย่าง: (1) เก็บ/อ่าน token+id ผ่าน
+  `chrome.storage` (storage.js), (2) วาด DOM host อื่น (เช่น Scriptable) จะมีไฟล์ของตัวเองที่ทำ
+  (1) ด้วย `Keychain`/`FileManager` และ (2) ด้วย `Alert`/`UITable` ของ Scriptable เอง แต่เรียก
+  `lib/migrate.js`/`lib/notion.js` ตัวเดิมได้ทันทีโดยไม่ต้องแก้ core
+- **ยังไม่ได้เขียน Scriptable host จริง** — ตอนนี้มีแค่ portable core พร้อมใช้ ถ้าจะทำ host ใหม่
+  วันหน้า เริ่มจาก copy `lib/notion.js` + `lib/migrate.js` ไปแล้วเขียนแค่ชั้น host เพิ่ม
 
 ## กฎเหล็กของ Notion API (อ่านก่อนแตะโค้ดที่เรียก Notion)
 
@@ -55,7 +74,7 @@ src/
 3. **Integration capabilities** — ต้องเปิด Read + Update + Insert ใน Notion ไม่งั้น write จะ fail
 
 4. **Parent page** — สร้าง database ที่ root ของ workspace ไม่ได้ ต้องมี parent page ที่ integration
-   เข้าถึงได้ก่อน (flow ใน options.js: ผู้ใช้ share page → listAccessiblePages → เลือก → createQuestDatabase)
+   เข้าถึงได้ก่อน (flow ใน migrate.js: ผู้ใช้ share page → listAccessiblePages → เลือก → createQuestDatabase)
 
 5. **Timezone** — คำนวณ "วันนี้" ด้วย `bangkokToday()` เสมอ (Asia/Bangkok) อย่าใช้ UTC ตรง ๆ
 
@@ -119,7 +138,8 @@ src/
 ## วิธี load / ทดสอบ
 
 1. `chrome://extensions` → เปิด Developer mode → Load unpacked → เลือกโฟลเดอร์นี้
-2. กดไอคอน → "เปิดหน้าตั้งค่า" → ทำตาม step 1-3
+2. กดไอคอน → "เปิดหน้าตั้งค่า" → ใส่ token (step 1) → กด "ไปหน้าจัดการ database" → สร้าง/เชื่อม
+   quest + reading database ที่หน้า migrate → กลับมาตั้งค่าการเตือน (step 2)
 3. ดู log: service worker ดูที่ `chrome://extensions` → ปุ่ม "service worker"; popup/quest/options คลิกขวา → Inspect
 4. ทดสอบ alarm เร็ว ๆ: เปลี่ยน interval เป็น 15 หรือเรียก `chrome.alarms` ใน console ของ service worker
 5. unit test: `node test/thaiDate.test.mjs` (หรือสั่ง `/test`) — ครอบ `parseQuickAdd`
@@ -152,10 +172,12 @@ src/
 - [x] **อ่านทีหลัง (Reading List)** — เมนูแยกจาก quest, database คนละตัว, capture ผ่าน context menu
       (เลือกข้อความ / คลิกขวาลิงก์), สลับ tab ในตัว popup ด้วย bottom nav (ไม่เปิดหน้าต่างแยกแล้ว)
       ที่ยังไม่ทำ: UI แก้/ดู property `บันทึก` (rich_text), filter ตาม `แท็ก`, pagination ถ้ารายการเกิน ~100
-- [x] **เช็ค & อัปเดต schema database + migration log บน Notion** — step 2 (quest) / step 4 (reading)
-      มีปุ่มเดียวเช็คว่า property ครบไหม ไม่ครบกดอัปเดตได้ ครบแล้ว disable ปุ่ม ทุก connect event
-      (สร้างใหม่/เชื่อมเดิม/อัปเดต — ไม่ใช่แค่ตอนอัปเดตสำเร็จ) log ลง database "🛠 Migration Log" ใต้
-      page แม่เดียวกัน พร้อมเลข "เวอร์ชัน" (`QUEST_SCHEMA_VERSION`/`READING_SCHEMA_VERSION` ใน
-      notion.js — bump เลขนี้ทุกครั้งที่แก้ schema) เรียง column นี้ใน Notion เพื่อดูเวอร์ชันล่าสุดได้เลย
-      ดู [`docs/FEATURES.md`](docs/FEATURES.md) **ยังไม่ได้ทดสอบกับ Notion จริง** — endpoint
-      `PATCH /v1/data_sources/{id}` เป็นการ assume ตาม pattern API ใหม่ (ดูกฎข้อ 5.5 ด้านบน)
+- [x] **เช็ค & อัปเดต schema database + migration log บน Notion** — หน้า `migrate/` (แยกจาก options
+      แล้ว) มีปุ่มเดียวต่อ database เช็คว่า property ครบไหม ไม่ครบกดอัปเดตได้ ครบแล้ว disable ปุ่ม ทุก
+      connect event (สร้างใหม่/เชื่อมเดิม/อัปเดต) log ลง database "🛠 Migration Log" ใต้ page แม่เดียวกัน
+      พร้อมเลข "เวอร์ชัน" (`QUEST_SCHEMA_VERSION`/`READING_SCHEMA_VERSION` ใน notion.js — bump เลขนี้
+      ทุกครั้งที่แก้ schema) ดู [`docs/FEATURES.md`](docs/FEATURES.md) **ยังไม่ได้ทดสอบกับ Notion จริง**
+      — endpoint `PATCH /v1/data_sources/{id}` เป็นการ assume ตาม pattern API ใหม่ (ดูกฎข้อ 5.5 ด้านบน)
+- [ ] **Scriptable (iOS) host** — โครงพร้อมแล้ว (`lib/notion.js` + `lib/migrate.js` ไม่แตะ chrome.*)
+      แต่ยังไม่ได้เขียนตัว host จริงสำหรับ Scriptable (Keychain + Alert/UITable) — ของผู้ใช้ตั้งใจ
+      ไว้ใช้ทีหลัง ดู "สถาปัตยกรรมแบบ cross-platform" ด้านบน

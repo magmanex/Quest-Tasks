@@ -12,7 +12,7 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
 ```
 
 ทุก action ที่กระทบ badge หรือ game state ต้องผ่าน background (single source) popup ห้ามเรียก notion.js ตรง
-สำหรับ action ที่กระทบ state — เรียกตรงได้เฉพาะ read ในหน้า options (เช่น test connection / migrate)
+สำหรับ action ที่กระทบ state — เรียกตรงได้เฉพาะ read ในหน้า options/migrate (เช่น test connection / migrate)
 
 ## message API (background.js → `handleMessage`)
 
@@ -85,10 +85,26 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
 - UI: **อยู่ใน `popup.js` เดียวกับ quest** ไม่ใช่หน้าแยก — `#view-quest` / `#view-reading` เป็น 2 section
   ใน DOM เดียวกัน สลับด้วย bottom nav (`.bottom-nav` / `switchView()`) ผ่าน `hidden` attribute เหมือน mobile app
   (เช่น Facebook) lazy-load: โหลด reading list ครั้งแรกตอนกดแท็บ (`readingLoaded` flag) ไม่โหลดถ้าไม่เคยกด
-- setup: `options.html` step 4 (`reading-parent-select` / `reading-migrate-btn` / `reading-link-btn`)
-  reuse list of accessible pages ที่โหลดมาจาก step 2 (เลือก parent page เดียวกับ quest ได้)
+- setup: `migrate.html` (section "อ่านทีหลัง" — `reading-parent-select` / `reading-migrate-btn` /
+  `reading-link-btn`) reuse list of accessible pages ที่โหลดมาจาก section quest (เลือก parent page เดียวกันได้)
 
-### เช็ค & อัปเดต schema database + migration log (options.js)
+### หน้า migrate แยกจาก options + portable core (`lib/migrate.js`)
+- ปัญหาที่แก้: เดิม options.html มี step 2 (quest db) / step 4 (reading db) ปนกับ step token/settings
+  ทำให้หน้าตั้งค่ายาว งง ว่า step ไหนทำอะไร — แยกการจัดการ database ทั้งหมดไปหน้า `migrate/migrate.html`
+  ต่างหาก (options.html เหลือแค่ token + การเตือน + ล้างการตั้งค่า) เปิดจากปุ่ม "ไปหน้าจัดการ database →"
+  ใน step 1 ของ options.html (โผล่หลังทดสอบ token สำเร็จ)
+- `migrate.html` มี 2 section แยกชัดเจนในหน้าเดียว: "🎯 Quest Tasks" กับ "📚 อ่านทีหลัง" คนละ database
+  คนละ parent page ได้ แต่ใช้ flow/ปุ่มเหมือนกัน (สร้างใหม่/เชื่อมเดิม + เช็ค-อัปเดต schema)
+- **`lib/migrate.js` เป็น core ที่ไม่แตะ `chrome.*` เลย** — `createDatabase()`/`linkDatabase()`/
+  `checkDatabase()`/`updateDatabase()`/`writeLog()` รับทุกอย่างผ่าน param (token, parentPageId,
+  schemaDef, ฯลฯ) แล้วเรียก `lib/notion.js` (ก็ pure fetch เหมือนกัน) คืนผลลัพธ์ดิบ + `log` object
+  ที่ host เอาไปเขียนต่อเอง — ตั้งใจให้ host (ตอนนี้คือ `migrate/migrate.js` ของ Chrome) เป็นแค่ชั้นบาง ๆ
+  ที่ผูก `chrome.storage`/DOM เข้ากับ core นี้ เผื่อวันหน้าทำ host อื่น (Scriptable บน iOS) ใช้ core
+  ไฟล์เดิมได้ทันที — **ยังไม่ได้เขียน Scriptable host จริง ตอนนี้แค่เตรียมโครงไว้**
+- `migrate/migrate.js` (Chrome host): ทุก handler เรียก `migrate.xxx({...})` แล้วเอาผลไป
+  `setConfig()`/อัปเดต DOM เอง — ไม่มี business logic อยู่ในไฟล์นี้เลย (ย้ายลง lib/migrate.js หมด)
+
+### เช็ค & อัปเดต schema database + migration log (`lib/migrate.js` + `migrate/migrate.js`)
 - ปัญหาที่แก้: ก่อนหน้านี้ถ้าเพิ่ม property ใหม่ในโค้ด (เช่น `บันทึก` ของ reading) คนที่ migrate database
   ไว้ก่อนหน้าจะขาด property นั้นไปเงียบ ๆ ไม่รู้ตัว
 - `lib/notion.js` → `questSchema(propMap)` / `readingSchema(propMap)` เป็น **single source of truth**
@@ -99,14 +115,15 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
 - `updateSchema(token, dataSourceId, missing)` → `PATCH /data_sources/{id}` เพิ่มเฉพาะ property ที่ขาด
   **ไม่แก้ type ของ property ที่มีอยู่แล้วแต่ type ไม่ตรง** (เสี่ยงข้อมูลพัง) แค่ flag ไว้ในข้อความสถานะ
 - UI ปุ่มเดียว (`#quest-schema-btn` / `#reading-schema-btn`): พร้อมแล้ว = disable + "เป็นปัจจุบันแล้ว ✓",
-  ไม่พร้อม = enable + "อัปเดต database (+N)" เช็คอัตโนมัติทุกครั้งที่เปิดหน้าตั้งค่า (ถ้ามี dataSourceId แล้ว)
+  ไม่พร้อม = enable + "อัปเดต database (+N)" เช็คอัตโนมัติทุกครั้งที่เปิดหน้า migrate (ถ้ามี dataSourceId แล้ว)
   และทุกครั้งหลัง create/link สำเร็จ
-- migration log: `ensureMigrationLogDataSource` สร้าง database "🛠 Migration Log" (title + number
+- migration log: `notion.ensureMigrationLogDataSource` สร้าง database "🛠 Migration Log" (title + number
   "เวอร์ชัน" + rich_text "รายละเอียด") ใต้ page แม่ของ database ที่ migrate ครั้งแรกที่มี event เกิดขึ้น
   (idempotent — ครั้งถัดไปใช้ id เดิมจาก `cfg.migrationLogDataSourceId`) ใช้ Notion `created_time`
   built-in เป็น timestamp ไม่มี date property ของตัวเอง
-- `logMigration` เขียน 1 row ต่อ **ทุก connect event** ไม่ใช่แค่ตอนอัปเดตสำเร็จ — สร้างใหม่/เชื่อมเดิม/
-  อัปเดต ทั้งสามเหตุการณ์เรียก `writeMigrationLog()` (options.js) เสมอ แม้ผลเช็คคือ "ครบอยู่แล้ว ไม่ต้อง
+- `notion.logMigration` เขียน 1 row ต่อ **ทุก connect event** ไม่ใช่แค่ตอนอัปเดตสำเร็จ — สร้างใหม่/เชื่อมเดิม/
+  อัปเดต ทั้งสามเหตุการณ์เรียก `migrate.writeLog()` (lib/migrate.js) ผ่าน `writeLog()` ของ host
+  (migrate/migrate.js — ผูกกับ `chrome.storage` ก่อนเรียก) เสมอ แม้ผลเช็คคือ "ครบอยู่แล้ว ไม่ต้อง
   อัปเดต" ก็ log ไว้ด้วย — กันเคสที่ผู้ใช้เชื่อม database ที่มี schema ตรงอยู่แล้ว แล้วงงว่าทำไม log ว่าง
 - `QUEST_SCHEMA_VERSION` / `READING_SCHEMA_VERSION` (notion.js) — bump เลขนี้ทุกครั้งที่แก้
   `questSchema()`/`readingSchema()` แล้วทุก log entry หลังจากนั้นจะพ่วงเลขเวอร์ชันนี้ไปด้วย เปิด
