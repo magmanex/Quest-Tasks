@@ -59,6 +59,12 @@ src/
 
 5. **Timezone** — คำนวณ "วันนี้" ด้วย `bangkokToday()` เสมอ (Asia/Bangkok) อย่าใช้ UTC ตรง ๆ
 
+5.5. **อัปเดต schema ของ data source ที่มีอยู่แล้ว** ใช้ `PATCH /v1/data_sources/{id}` (ไม่ใช่
+   `PATCH /v1/databases/{id}` แบบ API เก่า) body `{ properties: {...} }` — merge เฉพาะ key ที่ส่งไป
+   ไม่แตะ property เดิมที่ไม่ได้ระบุ ใช้คู่กับ `GET /v1/data_sources/{id}` (ดึง schema ปัจจุบันมาเทียบ)
+   ดู `notion.js` → `checkSchema` / `updateSchema` **หมายเหตุ: endpoint นี้อิงตาม pattern ของ
+   2025-09-03 ยังไม่เคย test กับ Notion จริง ถ้า error 404/400 ให้เช็ค docs ก่อนแก้**
+
 6. **วันที่ของ task มี 2 รูปแบบ** — เก็บใน Notion date property เป็น `date.start`:
    - **date-only** `"2026-06-17"` (งานทั้งวัน)
    - **datetime** `"2026-06-17T12:00:00+07:00"` (งานที่ตั้งเวลา — ต้องมี offset `+07:00` เสมอ)
@@ -144,5 +150,10 @@ src/
       แต่ยังไม่ sync การแก้ไขฝั่ง Notion กลับมาแบบ realtime (ต้องกด refresh / รอ alarm)
 - [ ] **เวลาในงาน sync ลำดับข้ามเครื่อง** — `taskOrder` เป็น local-only ถ้าใช้หลายเครื่องลำดับไม่ตรงกัน
 - [x] **อ่านทีหลัง (Reading List)** — เมนูแยกจาก quest, database คนละตัว, capture ผ่าน context menu
-      (เลือกข้อความ / คลิกขวาลิงก์), หน้า `src/reading/` เปิดเป็น tab ดู [`docs/FEATURES.md`](docs/FEATURES.md)
+      (เลือกข้อความ / คลิกขวาลิงก์), สลับ tab ในตัว popup ด้วย bottom nav (ไม่เปิดหน้าต่างแยกแล้ว)
       ที่ยังไม่ทำ: UI แก้/ดู property `บันทึก` (rich_text), filter ตาม `แท็ก`, pagination ถ้ารายการเกิน ~100
+- [x] **เช็ค & อัปเดต schema database + migration log บน Notion** — step 2 (quest) / step 4 (reading)
+      มีปุ่มเดียวเช็คว่า property ครบไหม ไม่ครบกดอัปเดตได้ ครบแล้ว disable ปุ่ม บันทึก log การอัปเดตเป็น
+      database "🛠 Migration Log" ใต้ page แม่เดียวกัน ดู [`docs/FEATURES.md`](docs/FEATURES.md)
+      **ยังไม่ได้ทดสอบกับ Notion จริง** — endpoint `PATCH /v1/data_sources/{id}` เป็นการ assume ตาม
+      pattern API ใหม่ (ดูกฎข้อ 5.5 ด้านบน) ทดสอบก่อนเชื่อ 100%

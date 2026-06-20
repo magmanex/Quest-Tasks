@@ -67,6 +67,12 @@
         </div>
 
         <div id="migrate-status" class="status"></div>
+
+        <!-- เช็คว่า schema พร้อมทุกฟีเจอร์ไหม -->
+        <div class="schema-check" id="quest-schema-check" hidden>
+          <div id="quest-schema-status" class="status"></div>
+          <button id="quest-schema-btn" class="btn primary" disabled>เป็นปัจจุบันแล้ว ✓</button>
+        </div>
       </div>
     </section>
 
@@ -128,6 +134,12 @@
         </div>
 
         <div id="reading-migrate-status" class="status"></div>
+
+        <!-- เช็คว่า schema พร้อมทุกฟีเจอร์ไหม -->
+        <div class="schema-check" id="reading-schema-check" hidden>
+          <div id="reading-schema-status" class="status"></div>
+          <button id="reading-schema-btn" class="btn primary" disabled>เป็นปัจจุบันแล้ว ✓</button>
+        </div>
       </div>
     </section>
 
@@ -137,6 +149,7 @@
       <div class="summary-row"><span>data source</span><code id="sum-ds">—</code></div>
       <div class="summary-actions">
         <button id="open-db" class="link">เปิด database ใน Notion</button>
+        <button id="open-log" class="link" hidden>ดู migration log</button>
         <button id="reset" class="link danger">ล้างการตั้งค่า</button>
       </div>
     </section>

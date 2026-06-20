@@ -7,6 +7,7 @@ const DEFAULTS = {
   token: null,            // Internal Integration token (เก็บแบบ local เท่านั้น)
   databaseId: null,       // id ของ database container
   dataSourceId: null,     // id ของ data source ที่ใช้ query/create จริง (API 2025-09-03+)
+  questParentPageId: null, // page แม่ของ quest database — ใช้สร้าง migration log ใต้ page เดียวกัน
 
   // --- การจับคู่ชื่อ property ---
   // ถ้าผู้ใช้ rename column ใน Notion ให้แก้ตรงนี้ ไม่ต้องไปแก้โค้ดที่อื่น
@@ -20,6 +21,7 @@ const DEFAULTS = {
   // --- "อ่านทีหลัง" (เมนูแยกจาก quest, database คนละตัว) ---
   readingDatabaseId: null,
   readingDataSourceId: null,
+  readingParentPageId: null, // page แม่ของ reading database
   readingPropMap: {
     title: "ชื่อเรื่อง",
     url: "ลิงก์",
@@ -27,6 +29,10 @@ const DEFAULTS = {
     done: "อ่านแล้ว",
     note: "บันทึก"
   },
+
+  // --- migration log (audit trail บน Notion เอง) — สร้างใต้ page แม่ของ database แรกที่ migrate ---
+  migrationLogDatabaseId: null,
+  migrationLogDataSourceId: null,
 
   // --- การตั้งค่าการเตือน ---
   settings: {

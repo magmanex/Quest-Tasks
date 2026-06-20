@@ -104,12 +104,13 @@ $("migrate-btn").addEventListener("click", async () => {
   setStatus($("migrate-status"), "กำลังสร้าง database…", "busy");
   $("migrate-btn").disabled = true;
   try {
-    const { databaseId, dataSourceId } = await notion.createQuestDatabase(token, parentId, cfg.propMap);
-    await setConfig({ databaseId, dataSourceId });
+    const { databaseId, dataSourceId, parentPageId } = await notion.createQuestDatabase(token, parentId, cfg.propMap);
+    await setConfig({ databaseId, dataSourceId, questParentPageId: parentPageId });
     setStatus($("migrate-status"), "สร้าง database สำเร็จ 🎉", "ok");
     await chrome.runtime.sendMessage({ action: "rescheduleAlarm" });
     await chrome.runtime.sendMessage({ action: "refreshBadge" });
     renderSummary();
+    checkQuestSchema();
   } catch (e) {
     setStatus($("migrate-status"), `สร้างไม่สำเร็จ: ${e.message}`, "err");
     $("migrate-btn").disabled = false;
@@ -122,12 +123,13 @@ $("link-btn").addEventListener("click", async () => {
   if (!dbId) return setStatus($("migrate-status"), "ใส่ database id หรือ url", "err");
   setStatus($("migrate-status"), "กำลังเชื่อม…", "busy");
   try {
-    const dataSourceId = await notion.resolveDataSourceId(token, dbId);
-    await setConfig({ databaseId: dbId, dataSourceId });
+    const { dataSourceId, parentPageId } = await notion.resolveDataSourceId(token, dbId);
+    await setConfig({ databaseId: dbId, dataSourceId, questParentPageId: parentPageId });
     setStatus($("migrate-status"), "เชื่อม database สำเร็จ ✓ (ตรวจชื่อ property ให้ตรงกับที่ตั้งไว้ด้วย)", "ok");
     await chrome.runtime.sendMessage({ action: "rescheduleAlarm" });
     await chrome.runtime.sendMessage({ action: "refreshBadge" });
     renderSummary();
+    checkQuestSchema();
   } catch (e) {
     setStatus($("migrate-status"), `เชื่อมไม่ได้: ${e.message}`, "err");
   }
@@ -145,9 +147,10 @@ $("reading-migrate-btn").addEventListener("click", async () => {
   setStatus($("reading-migrate-status"), "กำลังสร้าง database…", "busy");
   $("reading-migrate-btn").disabled = true;
   try {
-    const { databaseId, dataSourceId } = await notion.createReadingDatabase(token, parentId, cfg.readingPropMap);
-    await setConfig({ readingDatabaseId: databaseId, readingDataSourceId: dataSourceId });
+    const { databaseId, dataSourceId, parentPageId } = await notion.createReadingDatabase(token, parentId, cfg.readingPropMap);
+    await setConfig({ readingDatabaseId: databaseId, readingDataSourceId: dataSourceId, readingParentPageId: parentPageId });
     setStatus($("reading-migrate-status"), "สร้าง database สำเร็จ 🎉", "ok");
+    checkReadingSchema();
   } catch (e) {
     setStatus($("reading-migrate-status"), `สร้างไม่สำเร็จ: ${e.message}`, "err");
     $("reading-migrate-btn").disabled = false;
@@ -160,11 +163,104 @@ $("reading-link-btn").addEventListener("click", async () => {
   if (!dbId) return setStatus($("reading-migrate-status"), "ใส่ database id หรือ url", "err");
   setStatus($("reading-migrate-status"), "กำลังเชื่อม…", "busy");
   try {
-    const dataSourceId = await notion.resolveDataSourceId(token, dbId);
-    await setConfig({ readingDatabaseId: dbId, readingDataSourceId: dataSourceId });
+    const { dataSourceId, parentPageId } = await notion.resolveDataSourceId(token, dbId);
+    await setConfig({ readingDatabaseId: dbId, readingDataSourceId: dataSourceId, readingParentPageId: parentPageId });
     setStatus($("reading-migrate-status"), "เชื่อม database สำเร็จ ✓ (ตรวจชื่อ property ให้ตรงกับที่ตั้งไว้ด้วย)", "ok");
+    checkReadingSchema();
   } catch (e) {
     setStatus($("reading-migrate-status"), `เชื่อมไม่ได้: ${e.message}`, "err");
+  }
+});
+
+// ---------- เช็ค & อัปเดต schema (ปุ่มเดียว: พร้อมแล้ว = disable, ไม่พร้อม = กดอัปเดตได้) ----------
+
+let questMissing = {};
+let readingMissing = {};
+
+async function refreshSchemaCheck(dataSourceId, schemaDef, statusEl, btnEl) {
+  setStatus(statusEl, "กำลังตรวจสอบ schema…", "busy");
+  try {
+    const { ready, missing } = await notion.checkSchema(token, dataSourceId, schemaDef);
+    if (ready) {
+      setStatus(statusEl, "schema เป็นปัจจุบันแล้ว ✓ พร้อมทุกฟีเจอร์", "ok");
+      btnEl.disabled = true;
+      btnEl.textContent = "เป็นปัจจุบันแล้ว ✓";
+    } else {
+      const names = Object.keys(missing);
+      setStatus(statusEl, `ขาด ${names.length} property: ${names.join(", ")}`, "err");
+      btnEl.disabled = false;
+      btnEl.textContent = `อัปเดต database (+${names.length})`;
+    }
+    return missing;
+  } catch (e) {
+    setStatus(statusEl, `ตรวจสอบไม่ได้: ${e.message}`, "err");
+    return {};
+  }
+}
+
+async function checkQuestSchema() {
+  const cfg = await getConfig();
+  if (!cfg.dataSourceId) { $("quest-schema-check").hidden = true; return; }
+  $("quest-schema-check").hidden = false;
+  questMissing = await refreshSchemaCheck(
+    cfg.dataSourceId, notion.questSchema(cfg.propMap), $("quest-schema-status"), $("quest-schema-btn")
+  );
+}
+
+async function checkReadingSchema() {
+  const cfg = await getConfig();
+  if (!cfg.readingDataSourceId) { $("reading-schema-check").hidden = true; return; }
+  $("reading-schema-check").hidden = false;
+  readingMissing = await refreshSchemaCheck(
+    cfg.readingDataSourceId, notion.readingSchema(cfg.readingPropMap), $("reading-schema-status"), $("reading-schema-btn")
+  );
+}
+
+// บันทึก migration log ใต้ page แม่เดียวกับ database ที่ migrate — เงียบไว้ถ้าไม่มี parent page ให้สร้าง
+// (เช่น database อยู่ที่ workspace root ตรง ๆ ไม่มี page แม่)
+async function tryLogMigration(parentPageId, target, addedNames) {
+  if (!parentPageId) return;
+  const cfg = await getConfig();
+  try {
+    const { databaseId, dataSourceId } = await notion.ensureMigrationLogDataSource(
+      token, parentPageId, cfg.migrationLogDataSourceId
+    );
+    if (dataSourceId !== cfg.migrationLogDataSourceId) {
+      await setConfig({ migrationLogDatabaseId: databaseId, migrationLogDataSourceId: dataSourceId });
+    }
+    const detail = addedNames.length ? `เพิ่ม property: ${addedNames.join(", ")}` : "ไม่มีการเปลี่ยนแปลง";
+    await notion.logMigration(token, dataSourceId, `อัปเดต ${target} database`, detail);
+    renderSummary();
+  } catch (e) {
+    console.warn("[Quest Tasks] log migration failed:", e.message);
+  }
+}
+
+$("quest-schema-btn").addEventListener("click", async () => {
+  const cfg = await getConfig();
+  $("quest-schema-btn").disabled = true;
+  setStatus($("quest-schema-status"), "กำลังอัปเดต…", "busy");
+  try {
+    await notion.updateSchema(token, cfg.dataSourceId, questMissing);
+    await tryLogMigration(cfg.questParentPageId, "quest", Object.keys(questMissing));
+    await checkQuestSchema();
+  } catch (e) {
+    setStatus($("quest-schema-status"), `อัปเดตไม่สำเร็จ: ${e.message}`, "err");
+    $("quest-schema-btn").disabled = false;
+  }
+});
+
+$("reading-schema-btn").addEventListener("click", async () => {
+  const cfg = await getConfig();
+  $("reading-schema-btn").disabled = true;
+  setStatus($("reading-schema-status"), "กำลังอัปเดต…", "busy");
+  try {
+    await notion.updateSchema(token, cfg.readingDataSourceId, readingMissing);
+    await tryLogMigration(cfg.readingParentPageId, "อ่านทีหลัง", Object.keys(readingMissing));
+    await checkReadingSchema();
+  } catch (e) {
+    setStatus($("reading-schema-status"), `อัปเดตไม่สำเร็จ: ${e.message}`, "err");
+    $("reading-schema-btn").disabled = false;
   }
 });
 
@@ -196,6 +292,12 @@ async function renderSummary() {
   $("open-db").onclick = () => {
     if (cfg.databaseId) chrome.tabs.create({ url: `https://www.notion.so/${cfg.databaseId.replace(/-/g, "")}` });
   };
+  $("open-log").hidden = !cfg.migrationLogDatabaseId;
+  $("open-log").onclick = () => {
+    if (cfg.migrationLogDatabaseId) {
+      chrome.tabs.create({ url: `https://www.notion.so/${cfg.migrationLogDatabaseId.replace(/-/g, "")}` });
+    }
+  };
 }
 
 $("reset").addEventListener("click", async () => {
@@ -215,6 +317,8 @@ $("reset").addEventListener("click", async () => {
     lock("step3", false);
     lock("step4", false);
     loadPages();
+    checkQuestSchema();
+    checkReadingSchema();
   }
   if (cfg.readingDataSourceId) {
     setStatus($("reading-migrate-status"), "เชื่อม database อ่านทีหลังไว้แล้ว ✓", "ok");

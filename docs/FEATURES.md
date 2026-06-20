@@ -88,6 +88,28 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
 - setup: `options.html` step 4 (`reading-parent-select` / `reading-migrate-btn` / `reading-link-btn`)
   reuse list of accessible pages ที่โหลดมาจาก step 2 (เลือก parent page เดียวกับ quest ได้)
 
+### เช็ค & อัปเดต schema database + migration log (options.js)
+- ปัญหาที่แก้: ก่อนหน้านี้ถ้าเพิ่ม property ใหม่ในโค้ด (เช่น `บันทึก` ของ reading) คนที่ migrate database
+  ไว้ก่อนหน้าจะขาด property นั้นไปเงียบ ๆ ไม่รู้ตัว
+- `lib/notion.js` → `questSchema(propMap)` / `readingSchema(propMap)` เป็น **single source of truth**
+  ของ schema ที่ทั้ง `createQuestDatabase`/`createReadingDatabase` (ตอนสร้างใหม่) และ `checkSchema`
+  (ตอนเช็ค database ที่มีอยู่แล้ว) ใช้ร่วมกัน — แก้ schema ที่เดียว ทั้งสองทางเห็นตรงกันเสมอ
+- `checkSchema(token, dataSourceId, schemaDef)` → `GET /data_sources/{id}` เทียบชื่อ+type property
+  คืน `{ready, missing}` — ไม่เช็ค options ของ select/multi_select (Notion auto-เพิ่มเองตอน write)
+- `updateSchema(token, dataSourceId, missing)` → `PATCH /data_sources/{id}` เพิ่มเฉพาะ property ที่ขาด
+  **ไม่แก้ type ของ property ที่มีอยู่แล้วแต่ type ไม่ตรง** (เสี่ยงข้อมูลพัง) แค่ flag ไว้ในข้อความสถานะ
+- UI ปุ่มเดียว (`#quest-schema-btn` / `#reading-schema-btn`): พร้อมแล้ว = disable + "เป็นปัจจุบันแล้ว ✓",
+  ไม่พร้อม = enable + "อัปเดต database (+N)" เช็คอัตโนมัติทุกครั้งที่เปิดหน้าตั้งค่า (ถ้ามี dataSourceId แล้ว)
+  และทุกครั้งหลัง create/link สำเร็จ
+- migration log: `ensureMigrationLogDataSource` สร้าง database "🛠 Migration Log" (title + rich_text)
+  ใต้ page แม่ของ database ที่เพิ่ง migrate ครั้งแรกที่มีการอัปเดต (idempotent — ครั้งถัดไปใช้ id เดิม)
+  `logMigration` เขียน 1 row ต่อการอัปเดต 1 ครั้ง (ชื่อ property ที่เพิ่ม) ใช้ Notion `created_time`
+  built-in เป็น timestamp ไม่มี date property ของตัวเอง
+- ต้องมี **parent page** ของ database นั้นถึงจะสร้าง log ได้ — `resolveDataSourceId` (โหมด "ใช้ database
+  เดิม") ดึง `parentPageId` จาก `data.parent` ของ Notion response ส่วน `createQuestDatabase`/
+  `createReadingDatabase` (โหมดสร้างใหม่) รู้ parentPageId อยู่แล้วเพราะเป็น argument ที่ส่งเข้าไป
+  ถ้า parent เป็น workspace root (ไม่มี page แม่) จะข้าม log แบบเงียบ ๆ ไม่ error (อัปเดต schema สำเร็จตามปกติ)
+
 ## รูปทรงข้อมูล (chrome.storage.local)
 
 ```js
@@ -104,7 +126,11 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
   shownQuestState: { date, ids: [] },              // กัน quest เด้งซ้ำราย task ต่อวัน
 
   readingDatabaseId, readingDataSourceId,          // "อ่านทีหลัง" — database คนละตัวจาก quest
-  readingPropMap: { title, url, tag, done, note }
+  readingParentPageId,                             // page แม่ของ reading database
+  readingPropMap: { title, url, tag, done, note },
+
+  questParentPageId,                                // page แม่ของ quest database
+  migrationLogDatabaseId, migrationLogDataSourceId  // "🛠 Migration Log" — สร้างครั้งแรกตอน schema อัปเดต
 }
 
 // เขียนตรงโดย popup.js (ไม่ผ่าน storage.js) — local-only ไม่ sync Notion

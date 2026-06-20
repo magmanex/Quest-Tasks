@@ -60,43 +60,59 @@ export async function listAccessiblePages(token) {
   }));
 }
 
+// schema ของ quest/reading เป็น single source of truth — ใช้ทั้งตอนสร้าง database ใหม่
+// และตอนเช็ค (checkSchema) ว่า database ที่เชื่อมไว้ขาด property ไหนไปจากที่โค้ดต้องใช้
+export function questSchema(propMap) {
+  return {
+    [propMap.title]: { title: {} },
+    [propMap.date]: { date: {} },
+    [propMap.done]: { checkbox: {} },
+    [propMap.rank]: {
+      select: {
+        options: [
+          { name: "S - ด่วนมาก", color: "red" },
+          { name: "A - สำคัญ", color: "orange" },
+          { name: "B - ปกติ", color: "blue" },
+          { name: "C - ทำเมื่อว่าง", color: "gray" }
+        ]
+      }
+    }
+  };
+}
+
+export function readingSchema(propMap) {
+  return {
+    [propMap.title]: { title: {} },
+    [propMap.url]: { url: {} },
+    [propMap.tag]: { multi_select: {} },
+    [propMap.done]: { checkbox: {} },
+    [propMap.note]: { rich_text: {} }
+  };
+}
+
 // สร้าง database ใหม่เป็น subpage ใต้ parentPageId พร้อม schema สำหรับ quest
 // API 2025-09-03: properties ต้องห่อใน initial_data_source
 export async function createQuestDatabase(token, parentPageId, propMap) {
   const data = await call(token, "/databases", "POST", {
     parent: { type: "page_id", page_id: parentPageId },
     title: [{ type: "text", text: { content: "🎯 Quest Tasks" } }],
-    initial_data_source: {
-      properties: {
-        [propMap.title]: { title: {} },
-        [propMap.date]: { date: {} },
-        [propMap.done]: { checkbox: {} },
-        [propMap.rank]: {
-          select: {
-            options: [
-              { name: "S - ด่วนมาก", color: "red" },
-              { name: "A - สำคัญ", color: "orange" },
-              { name: "B - ปกติ", color: "blue" },
-              { name: "C - ทำเมื่อว่าง", color: "gray" }
-            ]
-          }
-        }
-      }
-    }
+    initial_data_source: { properties: questSchema(propMap) }
   });
   const dataSourceId = data?.data_sources?.[0]?.id;
   if (!dataSourceId) {
     throw new NotionError("สร้าง database แล้วแต่หา data_source_id ไม่เจอ", 500);
   }
-  return { databaseId: data.id, dataSourceId };
+  return { databaseId: data.id, dataSourceId, parentPageId };
 }
 
 // resolve data_source_id จาก database_id (กรณีผู้ใช้เลือกใช้ database เดิมที่มีอยู่)
+// คืน parentPageId ด้วย (ถ้า parent เป็น page) — ใช้สร้าง migration log ใต้ page เดียวกันได้ทีหลัง
 export async function resolveDataSourceId(token, databaseId) {
   const data = await call(token, `/databases/${databaseId}`);
   const id = data?.data_sources?.[0]?.id;
   if (!id) throw new NotionError("database นี้ไม่มี data source", 400);
-  return id;
+  const parentPageId = data.parent?.type === "page_id" ? data.parent.page_id : null;
+  return { dataSourceId: id, parentPageId };
 }
 
 // สร้าง database ใหม่เป็น subpage ใต้ parentPageId สำหรับเก็บ "อ่านทีหลัง"
@@ -106,21 +122,62 @@ export async function createReadingDatabase(token, parentPageId, propMap) {
   const data = await call(token, "/databases", "POST", {
     parent: { type: "page_id", page_id: parentPageId },
     title: [{ type: "text", text: { content: "📚 อ่านทีหลัง" } }],
-    initial_data_source: {
-      properties: {
-        [propMap.title]: { title: {} },
-        [propMap.url]: { url: {} },
-        [propMap.tag]: { multi_select: {} },
-        [propMap.done]: { checkbox: {} },
-        [propMap.note]: { rich_text: {} }
-      }
-    }
+    initial_data_source: { properties: readingSchema(propMap) }
   });
   const dataSourceId = data?.data_sources?.[0]?.id;
   if (!dataSourceId) {
     throw new NotionError("สร้าง database แล้วแต่หา data_source_id ไม่เจอ", 500);
   }
+  return { databaseId: data.id, dataSourceId, parentPageId };
+}
+
+// เช็คว่า data source มี property ครบตาม schema ที่โค้ดต้องใช้ไหม (ชื่อ + type ต้องตรง)
+// ไม่เช็ค options ของ select/multi_select เพราะ Notion auto-เพิ่ม option ใหม่เองตอน write อยู่แล้ว
+export async function checkSchema(token, dataSourceId, schemaDef) {
+  const data = await call(token, `/data_sources/${dataSourceId}`);
+  const actual = data.properties || {};
+  const missing = {};
+  for (const [name, def] of Object.entries(schemaDef)) {
+    const wantType = Object.keys(def)[0];
+    if (!actual[name] || actual[name].type !== wantType) missing[name] = def;
+  }
+  return { ready: Object.keys(missing).length === 0, missing };
+}
+
+// เพิ่ม property ที่ขาดเข้า data source (PATCH แบบ merge — ไม่แตะ property เดิมที่ไม่ได้ส่งไป)
+export async function updateSchema(token, dataSourceId, missing) {
+  if (!missing || Object.keys(missing).length === 0) return null;
+  return call(token, `/data_sources/${dataSourceId}`, "PATCH", { properties: missing });
+}
+
+// database สำหรับบันทึก migration log — สร้างครั้งแรกครั้งเดียว (idempotent ผ่าน existingDataSourceId)
+export async function ensureMigrationLogDataSource(token, parentPageId, existingDataSourceId) {
+  if (existingDataSourceId) return { databaseId: null, dataSourceId: existingDataSourceId };
+  const data = await call(token, "/databases", "POST", {
+    parent: { type: "page_id", page_id: parentPageId },
+    title: [{ type: "text", text: { content: "🛠 Migration Log" } }],
+    initial_data_source: {
+      properties: {
+        "เหตุการณ์": { title: {} },
+        "รายละเอียด": { rich_text: {} }
+      }
+    }
+  });
+  const dataSourceId = data?.data_sources?.[0]?.id;
+  if (!dataSourceId) {
+    throw new NotionError("สร้าง migration log แล้วแต่หา data_source_id ไม่เจอ", 500);
+  }
   return { databaseId: data.id, dataSourceId };
+}
+
+export async function logMigration(token, logDataSourceId, eventTitle, detail) {
+  return call(token, "/pages", "POST", {
+    parent: { type: "data_source_id", data_source_id: logDataSourceId },
+    properties: {
+      "เหตุการณ์": { title: [{ text: { content: eventTitle } }] },
+      "รายละเอียด": { rich_text: [{ text: { content: detail } }] }
+    }
+  });
 }
 
 // เพิ่มเรื่องที่จะอ่านทีหลัง
