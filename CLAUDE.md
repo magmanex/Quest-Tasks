@@ -29,9 +29,10 @@ src/
   lib/notion.js          ตัวห่อ Notion REST API ทั้งหมด (อยู่ที่เดียว) — quest functions + reading list functions
   lib/storage.js         config + game state (chrome.storage.local) + ตรรกะ XP/level/streak/rankLetter
   lib/thaiDate.js        parser วันที่ภาษาไทย + helper จัดการวันที่ (timezone Asia/Bangkok)
-  popup/   (.html/js/css)   popup หลัก: ดูงานวันนี้ + quick-add + XP bar + ปุ่มเปิด "อ่านทีหลัง"
+  popup/   (.html/js/css)   popup หลัก: 2 tab สลับด้วย bottom nav (เหมือน mobile app) —
+                            "Quest" (งานวันนี้ + quick-add + XP bar) / "อ่านทีหลัง" (list + quick-add)
+                            ทั้งสอง tab อยู่ใน DOM เดียวกัน สลับด้วย `hidden` attribute ไม่เปิด tab/window ใหม่
   quest/   (.html/js/css)   หน้าต่าง quest แบบเกม (signature UI) + animation + เสียง
-  reading/ (.html/js/css)   เมนู "อ่านทีหลัง" แยกจาก quest — เปิดเป็น tab ปกติ (ไม่ใช่ popup window)
   options/ (.html/js/css)   หน้าตั้งค่า + flow migrate ครั้งแรก (step 1-3 quest, step 4 reading database)
   theme.css              design tokens ใช้ร่วมทุกหน้า (HTML อ้าง ../theme.css)
 ```

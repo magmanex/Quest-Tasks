@@ -1,6 +1,6 @@
 /* popup.css */
 body { width: 360px; }
-.wrap { padding: 14px 14px 0; }
+.wrap { padding: 14px 14px 64px; } /* 64px เผื่อพื้นที่ bottom-nav แบบ fixed ไม่ทับ content */
 
 /* syncbar: แถบ loading บางๆ ด้านบน โชว์ตอนกำลัง sync กับ Notion */
 .syncbar {
@@ -16,32 +16,34 @@ body { width: 360px; }
 }
 @keyframes syncslide { from { left: -40%; } to { left: 100%; } }
 
-/* topbar: brand + XP + quick-add ติดบนเสมอ พร้อมเงาบอก layer บน */
-.topbar {
-  position: sticky; top: 0; z-index: 20;
-  margin: -14px -14px 0; padding: 14px 14px 8px; /* -14px กลบ padding ของ .wrap ให้ชิดขอบ */
+/* appbar: brand + lvl + ปุ่ม settings/refresh ติดบนเสมอ ใช้ร่วมกันทุก tab */
+.appbar {
+  position: sticky; top: 0; z-index: 30;
+  display: flex; align-items: center; justify-content: space-between;
+  margin: -14px -14px 0; padding: 14px 14px 10px; /* -14px กลบ padding ของ .wrap ให้ชิดขอบ */
   background: var(--bg);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-}
-
-.head {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 12px;
 }
 .brand { display: flex; align-items: center; gap: 9px; }
 .brand-mark { font-size: 22px; }
 .brand-name { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+.appbar-actions { display: flex; align-items: center; gap: 6px; }
+.appbar-actions .icon-btn { color: var(--ink-faint); font-size: 15px; padding: 6px; border-radius: 7px; }
+.appbar-actions .icon-btn:hover { color: var(--ink); background: var(--bg-card-hover); }
+
+/* topbar: ส่วนหัวต่อ tab (xp/quick-add) — เลื่อนตามเนื้อหา ไม่ sticky (เหลือแค่ appbar ติดบน) */
+.topbar { padding-top: 12px; }
 
 .lvl {
   display: flex; flex-direction: column; align-items: center;
-  width: 42px; height: 42px; border-radius: 11px;
+  width: 36px; height: 36px; border-radius: 10px;
   background: radial-gradient(circle at 50% 30%, rgba(138,124,242,0.25), var(--bg-card));
   border: 1px solid var(--border-bright);
   transition: transform 0.15s ease;
 }
 .lvl:hover { transform: translateY(-1px); }
-.lvl-num { font-family: var(--font-mono); font-weight: 700; font-size: 16px; color: #cdc6fb; line-height: 1; margin-top: 5px; }
-.lvl-cap { font-family: var(--font-mono); font-size: 8px; color: var(--ink-faint); letter-spacing: 0.1em; }
+.lvl-num { font-family: var(--font-mono); font-weight: 700; font-size: 14px; color: #cdc6fb; line-height: 1; margin-top: 4px; }
+.lvl-cap { font-family: var(--font-mono); font-size: 7px; color: var(--ink-faint); letter-spacing: 0.1em; }
 
 .xp-row { margin-bottom: 14px; }
 .xp-track {
@@ -60,13 +62,13 @@ body { width: 360px; }
 }
 
 .quick { display: flex; gap: 7px; margin-bottom: 4px; }
-#quick-input {
+.quick input {
   flex: 1; background: var(--bg-card); border: 1px solid var(--border);
   border-radius: var(--radius-sm); padding: 9px 11px; color: var(--ink);
   font-size: 13px;
 }
-#quick-input::placeholder { color: var(--ink-faint); }
-#quick-input:focus { border-color: var(--border-bright); }
+.quick input::placeholder { color: var(--ink-faint); }
+.quick input:focus { border-color: var(--border-bright); }
 .quick-btn {
   background: var(--gold); color: #1a1300; font-weight: 700; font-size: 13px;
   border-radius: var(--radius-sm); padding: 0 14px;
@@ -157,15 +159,35 @@ body { width: 360px; }
 .up-date:hover { border-color: var(--border-bright); color: var(--ink); }
 .up-date::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
 
-.foot {
-  position: sticky; bottom: 0; z-index: 10;
-  display: flex; justify-content: space-between; align-items: center;
-  margin: 12px -14px 0; padding: 10px 14px; /* -14px เพื่อกินเต็มความกว้าง popup */
-  background: var(--bg); border-top: 1px solid var(--border);
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.35); /* เงาบอกว่าเป็น layer บน */
+/* bottom-nav: สลับ quest/อ่านทีหลัง แบบ mobile app (เช่น Facebook) — fixed เต็มความกว้าง popup */
+.bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  display: flex; background: var(--bg-raised); border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.35);
 }
-.link { font-size: 11.5px; color: var(--ink-faint); }
-.link:hover { color: var(--ink-dim); }
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 0 10px; color: var(--ink-faint); font-size: 10.5px; font-weight: 600;
+  transition: color 0.15s ease;
+}
+.nav-btn:hover { color: var(--ink-dim); }
+.nav-btn .nav-icon { font-size: 18px; line-height: 1; }
+.nav-btn.active { color: var(--gold-soft); }
+
+/* อ่านทีหลัง: tags + ปุ่มลบ เพิ่มจาก card เดิมของ quest */
+.card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag {
+  font-size: 10px; font-family: var(--font-mono); color: var(--violet);
+  background: rgba(138,124,242,0.14); padding: 2px 7px; border-radius: 99px;
+}
+.act-archive { border-color: rgba(224,85,107,0.3); color: var(--rose); }
+.act-archive:hover { background: rgba(224,85,107,0.1); }
+.reading-url-input {
+  width: 100%; margin-top: 6px; background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 9px 11px; color: var(--ink); font-size: 13px;
+}
+.reading-url-input::placeholder { color: var(--ink-faint); }
+.reading-url-input:focus { border-color: var(--border-bright); }
 
 .card[draggable], .up-item[draggable] { cursor: grab; }
 .dragging { opacity: 0.45; }

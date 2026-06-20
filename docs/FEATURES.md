@@ -66,7 +66,9 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
 
 ### UI chrome (popup)
 - `send()` ห่อ `chrome.runtime.sendMessage` + นับ request ค้าง → โชว์ `#syncbar` (loading bar ทอง) ตอน sync
-- `.topbar` (brand→quick-add) และ `.foot` เป็น `position: sticky` + เงา = layer บน
+- `.appbar` (brand + lvl + ปุ่ม settings/refresh) เป็น `position: sticky` ติดบนเสมอ ใช้ร่วมกันทั้ง 2 tab
+  `.topbar` (xp/quick-add ต่อ tab) ไม่ sticky แล้ว — เลื่อนตามเนื้อหาปกติ (ลดความซับซ้อนของ sticky ซ้อนกัน)
+- `.bottom-nav` เป็น `position: fixed` เต็มความกว้าง popup สลับ `#view-quest`/`#view-reading` ด้วย `hidden`
 - รายการวันนี้ (`.list`) สูงตามเนื้อหา (ไม่ fix height) popup จะสูงจน Chrome cap (~600px) แล้วค่อย scroll
 
 ### Gamification
@@ -80,8 +82,9 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
 - `lib/notion.js` → `createReadingDatabase` / `createReadingItem` / `getUnreadItems` / `markReadItem` / `archiveReadingItem`
 - capture: context menu 2 อัน ใน `background.js` — `addReadingFromSelection` (เลือกข้อความ, url = tab ปัจจุบัน),
   `addReadingFromLink` (คลิกขวาที่ลิงก์, url = `info.linkUrl`)
-- UI: `src/reading/reading.html` เปิดเป็น **tab ปกติ** (`chrome.tabs.create`, ไม่ใช่ popup window แบบ quest)
-  เพราะ list อาจยาว ต้อง scroll สบาย เปิดจากปุ่ม "📚 อ่านทีหลัง" ใน `popup.html` footer
+- UI: **อยู่ใน `popup.js` เดียวกับ quest** ไม่ใช่หน้าแยก — `#view-quest` / `#view-reading` เป็น 2 section
+  ใน DOM เดียวกัน สลับด้วย bottom nav (`.bottom-nav` / `switchView()`) ผ่าน `hidden` attribute เหมือน mobile app
+  (เช่น Facebook) lazy-load: โหลด reading list ครั้งแรกตอนกดแท็บ (`readingLoaded` flag) ไม่โหลดถ้าไม่เคยกด
 - setup: `options.html` step 4 (`reading-parent-select` / `reading-migrate-btn` / `reading-link-btn`)
   reuse list of accessible pages ที่โหลดมาจาก step 2 (เลือก parent page เดียวกับ quest ได้)
 
