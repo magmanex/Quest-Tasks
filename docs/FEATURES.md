@@ -101,10 +101,17 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
 - UI ปุ่มเดียว (`#quest-schema-btn` / `#reading-schema-btn`): พร้อมแล้ว = disable + "เป็นปัจจุบันแล้ว ✓",
   ไม่พร้อม = enable + "อัปเดต database (+N)" เช็คอัตโนมัติทุกครั้งที่เปิดหน้าตั้งค่า (ถ้ามี dataSourceId แล้ว)
   และทุกครั้งหลัง create/link สำเร็จ
-- migration log: `ensureMigrationLogDataSource` สร้าง database "🛠 Migration Log" (title + rich_text)
-  ใต้ page แม่ของ database ที่เพิ่ง migrate ครั้งแรกที่มีการอัปเดต (idempotent — ครั้งถัดไปใช้ id เดิม)
-  `logMigration` เขียน 1 row ต่อการอัปเดต 1 ครั้ง (ชื่อ property ที่เพิ่ม) ใช้ Notion `created_time`
+- migration log: `ensureMigrationLogDataSource` สร้าง database "🛠 Migration Log" (title + number
+  "เวอร์ชัน" + rich_text "รายละเอียด") ใต้ page แม่ของ database ที่ migrate ครั้งแรกที่มี event เกิดขึ้น
+  (idempotent — ครั้งถัดไปใช้ id เดิมจาก `cfg.migrationLogDataSourceId`) ใช้ Notion `created_time`
   built-in เป็น timestamp ไม่มี date property ของตัวเอง
+- `logMigration` เขียน 1 row ต่อ **ทุก connect event** ไม่ใช่แค่ตอนอัปเดตสำเร็จ — สร้างใหม่/เชื่อมเดิม/
+  อัปเดต ทั้งสามเหตุการณ์เรียก `writeMigrationLog()` (options.js) เสมอ แม้ผลเช็คคือ "ครบอยู่แล้ว ไม่ต้อง
+  อัปเดต" ก็ log ไว้ด้วย — กันเคสที่ผู้ใช้เชื่อม database ที่มี schema ตรงอยู่แล้ว แล้วงงว่าทำไม log ว่าง
+- `QUEST_SCHEMA_VERSION` / `READING_SCHEMA_VERSION` (notion.js) — bump เลขนี้ทุกครั้งที่แก้
+  `questSchema()`/`readingSchema()` แล้วทุก log entry หลังจากนั้นจะพ่วงเลขเวอร์ชันนี้ไปด้วย เปิด
+  database "🛠 Migration Log" ใน Notion แล้วเรียง column "เวอร์ชัน" จากมากไปน้อย แถวบนสุด = เวอร์ชัน
+  ล่าสุดที่ database นั้นอยู่ ไม่ต้องเปิดโค้ดมาไล่เทียบ property เอง
 - ต้องมี **parent page** ของ database นั้นถึงจะสร้าง log ได้ — `resolveDataSourceId` (โหมด "ใช้ database
   เดิม") ดึง `parentPageId` จาก `data.parent` ของ Notion response ส่วน `createQuestDatabase`/
   `createReadingDatabase` (โหมดสร้างใหม่) รู้ parentPageId อยู่แล้วเพราะเป็น argument ที่ส่งเข้าไป

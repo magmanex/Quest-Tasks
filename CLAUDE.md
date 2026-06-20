@@ -153,7 +153,9 @@ src/
       (เลือกข้อความ / คลิกขวาลิงก์), สลับ tab ในตัว popup ด้วย bottom nav (ไม่เปิดหน้าต่างแยกแล้ว)
       ที่ยังไม่ทำ: UI แก้/ดู property `บันทึก` (rich_text), filter ตาม `แท็ก`, pagination ถ้ารายการเกิน ~100
 - [x] **เช็ค & อัปเดต schema database + migration log บน Notion** — step 2 (quest) / step 4 (reading)
-      มีปุ่มเดียวเช็คว่า property ครบไหม ไม่ครบกดอัปเดตได้ ครบแล้ว disable ปุ่ม บันทึก log การอัปเดตเป็น
-      database "🛠 Migration Log" ใต้ page แม่เดียวกัน ดู [`docs/FEATURES.md`](docs/FEATURES.md)
-      **ยังไม่ได้ทดสอบกับ Notion จริง** — endpoint `PATCH /v1/data_sources/{id}` เป็นการ assume ตาม
-      pattern API ใหม่ (ดูกฎข้อ 5.5 ด้านบน) ทดสอบก่อนเชื่อ 100%
+      มีปุ่มเดียวเช็คว่า property ครบไหม ไม่ครบกดอัปเดตได้ ครบแล้ว disable ปุ่ม ทุก connect event
+      (สร้างใหม่/เชื่อมเดิม/อัปเดต — ไม่ใช่แค่ตอนอัปเดตสำเร็จ) log ลง database "🛠 Migration Log" ใต้
+      page แม่เดียวกัน พร้อมเลข "เวอร์ชัน" (`QUEST_SCHEMA_VERSION`/`READING_SCHEMA_VERSION` ใน
+      notion.js — bump เลขนี้ทุกครั้งที่แก้ schema) เรียง column นี้ใน Notion เพื่อดูเวอร์ชันล่าสุดได้เลย
+      ดู [`docs/FEATURES.md`](docs/FEATURES.md) **ยังไม่ได้ทดสอบกับ Notion จริง** — endpoint
+      `PATCH /v1/data_sources/{id}` เป็นการ assume ตาม pattern API ใหม่ (ดูกฎข้อ 5.5 ด้านบน)

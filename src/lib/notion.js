@@ -60,6 +60,12 @@ export async function listAccessiblePages(token) {
   }));
 }
 
+// เลขเวอร์ชัน schema — bump ทุกครั้งที่แก้ questSchema()/readingSchema() (เพิ่ม/ลบ/เปลี่ยน type property)
+// เขียนลง "เวอร์ชัน" ใน migration log ทุกครั้งที่ create/link/update เพื่อให้ดูใน Notion ได้ว่า
+// database ไหนอยู่ที่เวอร์ชันล่าสุดหรือยัง โดยไม่ต้องเปิดโค้ดมาไล่เทียบ property เอง
+export const QUEST_SCHEMA_VERSION = 1;
+export const READING_SCHEMA_VERSION = 1;
+
 // schema ของ quest/reading เป็น single source of truth — ใช้ทั้งตอนสร้าง database ใหม่
 // และตอนเช็ค (checkSchema) ว่า database ที่เชื่อมไว้ขาด property ไหนไปจากที่โค้ดต้องใช้
 export function questSchema(propMap) {
@@ -151,6 +157,8 @@ export async function updateSchema(token, dataSourceId, missing) {
 }
 
 // database สำหรับบันทึก migration log — สร้างครั้งแรกครั้งเดียว (idempotent ผ่าน existingDataSourceId)
+// มี property "เวอร์ชัน" เป็น number ตั้งใจให้ sort/filter ใน Notion ได้ — เปิด database นี้แล้วเรียง
+// "เวอร์ชัน" จากมากไปน้อย แถวบนสุด = เวอร์ชันล่าสุดที่ database นั้นอยู่ ไม่ต้องไล่อ่านโค้ดเทียบเอง
 export async function ensureMigrationLogDataSource(token, parentPageId, existingDataSourceId) {
   if (existingDataSourceId) return { databaseId: null, dataSourceId: existingDataSourceId };
   const data = await call(token, "/databases", "POST", {
@@ -159,6 +167,7 @@ export async function ensureMigrationLogDataSource(token, parentPageId, existing
     initial_data_source: {
       properties: {
         "เหตุการณ์": { title: {} },
+        "เวอร์ชัน": { number: {} },
         "รายละเอียด": { rich_text: {} }
       }
     }
@@ -170,11 +179,12 @@ export async function ensureMigrationLogDataSource(token, parentPageId, existing
   return { databaseId: data.id, dataSourceId };
 }
 
-export async function logMigration(token, logDataSourceId, eventTitle, detail) {
+export async function logMigration(token, logDataSourceId, eventTitle, version, detail) {
   return call(token, "/pages", "POST", {
     parent: { type: "data_source_id", data_source_id: logDataSourceId },
     properties: {
       "เหตุการณ์": { title: [{ text: { content: eventTitle } }] },
+      "เวอร์ชัน": { number: version },
       "รายละเอียด": { rich_text: [{ text: { content: detail } }] }
     }
   });
