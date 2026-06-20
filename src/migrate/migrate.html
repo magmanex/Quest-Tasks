@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <link rel="stylesheet" href="../theme.css">
   <link rel="stylesheet" href="../options/options.css">
+  <link rel="stylesheet" href="migrate.css">
 </head>
 <body>
   <div class="page">
@@ -20,14 +21,14 @@
       <a id="goto-options" style="cursor:pointer;">ตั้งค่า</a> เพื่อเชื่อมต่อ Notion ก่อน
     </p>
 
-    <!-- Quest database -->
+    <!-- Migrate: quest + reading ในขั้นตอนเดียว (คนละ database แต่ทำพร้อมกันได้) -->
     <section class="block">
-      <div class="block-num">🎯</div>
+      <div class="block-num">🛠</div>
       <div class="block-body">
-        <h2>Quest Tasks</h2>
+        <h2>Migrate</h2>
         <p class="muted">
-          แชร์ page สัก 1 หน้าให้ integration ก่อน (ในหน้านั้นกด <b>•••</b> → Connections → เลือก integration)
-          แล้วเลือกเป็นที่เก็บ database ด้านล่าง
+          แชร์ page สัก 1 หน้าให้ integration ก่อน (กด <b>•••</b> → Connections → เลือก integration)
+          แล้วเลือกเป็นที่เก็บ database ด้านล่าง — กดทีเดียวจัดการได้ทั้ง 🎯 quest กับ 📚 อ่านทีหลัง
         </p>
 
         <div class="seg">
@@ -40,62 +41,44 @@
             <select id="parent-select"><option value="">— เลือก page แม่ —</option></select>
             <button id="reload-pages" class="btn ghost">โหลดรายการ</button>
           </div>
-          <button id="migrate-btn" class="btn primary" disabled>สร้าง database</button>
+          <button id="migrate-btn" class="btn primary" disabled>สร้าง database ทั้งหมด</button>
         </div>
 
         <div id="mode-existing" class="mode" hidden>
-          <p class="muted small">วาง database ID หรือ URL ของ database ที่แชร์ให้ integration แล้ว</p>
-          <div class="row">
-            <input id="existing-db" type="text" placeholder="database id หรือ url">
-          </div>
-          <button id="link-btn" class="btn primary">เชื่อม</button>
+          <p class="muted small">วาง database ID หรือ URL ของแต่ละอัน (เว้นว่างได้ถ้าไม่ต้องการเชื่อมตัวนั้น)</p>
+          <label class="field-label">🎯 Quest Tasks</label>
+          <div class="row"><input id="existing-db" type="text" placeholder="quest database id หรือ url"></div>
+          <label class="field-label">📚 อ่านทีหลัง</label>
+          <div class="row"><input id="reading-existing-db" type="text" placeholder="reading database id หรือ url"></div>
+          <button id="link-btn" class="btn primary">เชื่อม database</button>
         </div>
 
         <div id="migrate-status" class="status"></div>
 
+        <!-- เช็คความพร้อม schema ของแต่ละ database -->
         <div class="schema-check" id="quest-schema-check" hidden>
+          <label class="field-label">🎯 Quest Tasks</label>
           <div id="quest-schema-status" class="status"></div>
           <button id="quest-schema-btn" class="btn primary" disabled>เป็นปัจจุบันแล้ว ✓</button>
+        </div>
+        <div class="schema-check" id="reading-schema-check" hidden>
+          <label class="field-label">📚 อ่านทีหลัง</label>
+          <div id="reading-schema-status" class="status"></div>
+          <button id="reading-schema-btn" class="btn primary" disabled>เป็นปัจจุบันแล้ว ✓</button>
         </div>
       </div>
     </section>
 
-    <!-- Reading database -->
+    <!-- Migration Log: ดึงตรงจาก Notion มาแสดง -->
     <section class="block">
-      <div class="block-num">📚</div>
+      <div class="block-num">📜</div>
       <div class="block-body">
-        <h2>อ่านทีหลัง</h2>
-        <p class="muted">
-          เมนูแยกจาก quest — เก็บลิงก์/บทความที่อยากอ่าน คลิกขวา → "เก็บไว้อ่านทีหลัง"
-          ใช้ page แม่เดียวกับ quest ก็ได้ หรือเลือกใหม่
-        </p>
-
-        <div class="seg">
-          <button class="seg-btn active" data-reading-mode="new">สร้าง database ใหม่</button>
-          <button class="seg-btn" data-reading-mode="existing">ใช้ database เดิม</button>
+        <div class="log-head">
+          <h2>Migration Log</h2>
+          <button id="refresh-log" class="btn ghost">รีเฟรช</button>
         </div>
-
-        <div id="reading-mode-new" class="mode">
-          <div class="row">
-            <select id="reading-parent-select"><option value="">— เลือก page แม่ —</option></select>
-          </div>
-          <button id="reading-migrate-btn" class="btn primary" disabled>สร้าง database</button>
-        </div>
-
-        <div id="reading-mode-existing" class="mode" hidden>
-          <p class="muted small">วาง database ID หรือ URL ของ database ที่แชร์ให้ integration แล้ว</p>
-          <div class="row">
-            <input id="reading-existing-db" type="text" placeholder="database id หรือ url">
-          </div>
-          <button id="reading-link-btn" class="btn primary">เชื่อม</button>
-        </div>
-
-        <div id="reading-migrate-status" class="status"></div>
-
-        <div class="schema-check" id="reading-schema-check" hidden>
-          <div id="reading-schema-status" class="status"></div>
-          <button id="reading-schema-btn" class="btn primary" disabled>เป็นปัจจุบันแล้ว ✓</button>
-        </div>
+        <p class="muted">ประวัติการสร้าง/เชื่อม/อัปเดต database ดึงข้อมูลตรงจาก Notion ("🛠 Migration Log")</p>
+        <div id="log-list" class="log-list"></div>
       </div>
     </section>
 
@@ -106,7 +89,7 @@
       <div class="summary-actions">
         <button id="open-db" class="link" hidden>เปิด quest database</button>
         <button id="open-reading-db" class="link" hidden>เปิด reading database</button>
-        <button id="open-log" class="link" hidden>ดู migration log</button>
+        <button id="open-log" class="link" hidden>เปิด log ใน Notion</button>
       </div>
     </section>
   </div>

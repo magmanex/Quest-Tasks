@@ -93,14 +93,19 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
   ทำให้หน้าตั้งค่ายาว งง ว่า step ไหนทำอะไร — แยกการจัดการ database ทั้งหมดไปหน้า `migrate/migrate.html`
   ต่างหาก (options.html เหลือแค่ token + การเตือน + ล้างการตั้งค่า) เปิดจากปุ่ม "ไปหน้าจัดการ database →"
   ใน step 1 ของ options.html (โผล่หลังทดสอบ token สำเร็จ)
-- `migrate.html` มี 2 section แยกชัดเจนในหน้าเดียว: "🎯 Quest Tasks" กับ "📚 อ่านทีหลัง" คนละ database
-  คนละ parent page ได้ แต่ใช้ flow/ปุ่มเหมือนกัน (สร้างใหม่/เชื่อมเดิม + เช็ค-อัปเดต schema)
+- `migrate.html` มี **section "Migrate" เดียว** ไม่แยก quest/reading เป็นคนละ section แล้ว — เลือก
+  parent page ครั้งเดียว กดปุ่มเดียว (`#migrate-btn` / `#link-btn`) จัดการได้ทั้ง 🎯 quest กับ 📚 อ่านทีหลัง
+  พร้อมกัน (ฝั่งไหนมี dataSourceId อยู่แล้ว/ไม่กรอก id ก็ข้ามไปเฉย ๆ ไม่ error) ส่วน schema-check ยังแยก
+  status/ปุ่มต่อ database อยู่ (เพราะ schema คนละชุดจริง ๆ) แต่อยู่ใต้ section เดียวกัน ไม่ใช่คนละ card
+- ใต้ section migrate มี **section "Migration Log" แยก** ที่ query database "🛠 Migration Log" จาก
+  Notion มาแสดงเป็นรายการ (เหตุการณ์ + เวอร์ชัน + รายละเอียด + เวลา) ตรง ๆ ไม่ต้องเปิด Notion เอง —
+  ดู `notion.getMigrationLog()` + `migrate.fetchLog()` + `migrate.js → renderLog()`
 - **`lib/migrate.js` เป็น core ที่ไม่แตะ `chrome.*` เลย** — `createDatabase()`/`linkDatabase()`/
-  `checkDatabase()`/`updateDatabase()`/`writeLog()` รับทุกอย่างผ่าน param (token, parentPageId,
-  schemaDef, ฯลฯ) แล้วเรียก `lib/notion.js` (ก็ pure fetch เหมือนกัน) คืนผลลัพธ์ดิบ + `log` object
-  ที่ host เอาไปเขียนต่อเอง — ตั้งใจให้ host (ตอนนี้คือ `migrate/migrate.js` ของ Chrome) เป็นแค่ชั้นบาง ๆ
-  ที่ผูก `chrome.storage`/DOM เข้ากับ core นี้ เผื่อวันหน้าทำ host อื่น (Scriptable บน iOS) ใช้ core
-  ไฟล์เดิมได้ทันที — **ยังไม่ได้เขียน Scriptable host จริง ตอนนี้แค่เตรียมโครงไว้**
+  `checkDatabase()`/`updateDatabase()`/`writeLog()`/`fetchLog()` รับทุกอย่างผ่าน param (token,
+  parentPageId, schemaDef, ฯลฯ) แล้วเรียก `lib/notion.js` (ก็ pure fetch เหมือนกัน) คืนผลลัพธ์ดิบ +
+  `log` object ที่ host เอาไปเขียนต่อเอง — ตั้งใจให้ host (ตอนนี้คือ `migrate/migrate.js` ของ Chrome)
+  เป็นแค่ชั้นบาง ๆ ที่ผูก `chrome.storage`/DOM เข้ากับ core นี้ เผื่อวันหน้าทำ host อื่น (Scriptable
+  บน iOS) ใช้ core ไฟล์เดิมได้ทันที — **ยังไม่ได้เขียน Scriptable host จริง ตอนนี้แค่เตรียมโครงไว้**
 - `migrate/migrate.js` (Chrome host): ทุก handler เรียก `migrate.xxx({...})` แล้วเอาผลไป
   `setConfig()`/อัปเดต DOM เอง — ไม่มี business logic อยู่ในไฟล์นี้เลย (ย้ายลง lib/migrate.js หมด)
 

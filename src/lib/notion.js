@@ -179,6 +179,23 @@ export async function ensureMigrationLogDataSource(token, parentPageId, existing
   return { databaseId: data.id, dataSourceId };
 }
 
+// ดึง log ทั้งหมด เรียงใหม่สุดก่อน — ใช้แสดงประวัติ migrate ในหน้า migrate.html
+export async function getMigrationLog(token, logDataSourceId) {
+  const data = await call(token, `/data_sources/${logDataSourceId}/query`, "POST", {
+    sorts: [{ timestamp: "created_time", direction: "descending" }]
+  });
+  return (data.results || []).map(page => {
+    const props = page.properties || {};
+    return {
+      id: page.id,
+      eventTitle: props["เหตุการณ์"]?.title?.map(t => t.plain_text).join("") || "",
+      version: props["เวอร์ชัน"]?.number ?? null,
+      detail: props["รายละเอียด"]?.rich_text?.map(t => t.plain_text).join("") || "",
+      createdTime: page.created_time
+    };
+  });
+}
+
 export async function logMigration(token, logDataSourceId, eventTitle, version, detail) {
   return call(token, "/pages", "POST", {
     parent: { type: "data_source_id", data_source_id: logDataSourceId },

@@ -38,8 +38,9 @@ src/
   quest/   (.html/js/css)   หน้าต่าง quest แบบเกม (signature UI) + animation + เสียง
   options/ (.html/js/css)   หน้าตั้งค่า: token (step 1) + การเตือน (step 2) + ล้างการตั้งค่า — แค่นี้
                             การจัดการ database (quest/reading) ย้ายไปหน้า migrate แยกแล้ว
-  migrate/ (.html/js/css)   หน้า "จัดการ Database" แยกจาก options — สร้าง/เชื่อม/เช็ค-อัปเดต schema
-                            + migration log ของทั้ง quest กับ reading database (คนละ section ในหน้าเดียว)
+  migrate/ (.html/js/css)   หน้า "จัดการ Database" แยกจาก options — section เดียว จัดการ quest +
+                            reading database พร้อมกัน (สร้าง/เชื่อม/เช็ค-อัปเดต schema) ใต้นั้นมี section
+                            "Migration Log" ที่ query ประวัติ migrate มาแสดงจาก Notion ตรง ๆ
                             migrate.js เป็น Chrome host (DOM + chrome.storage) ที่เรียก lib/migrate.js
   theme.css              design tokens ใช้ร่วมทุกหน้า (HTML อ้าง ../theme.css)
 ```

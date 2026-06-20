@@ -62,3 +62,9 @@ export async function writeLog({ token, parentPageId, existingLogDataSourceId, l
   await notion.logMigration(token, dataSourceId, log.eventTitle, log.version, log.detail);
   return { logDatabaseId: databaseId || null, logDataSourceId: dataSourceId };
 }
+
+// อ่าน log กลับมาแสดง — ไม่มี dataSourceId แปลว่ายังไม่เคย migrate มาก่อน คืน [] เปล่า ๆ
+export async function fetchLog({ token, dataSourceId }) {
+  if (!dataSourceId) return [];
+  return notion.getMigrationLog(token, dataSourceId);
+}
