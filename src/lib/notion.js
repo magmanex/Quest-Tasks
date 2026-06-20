@@ -66,6 +66,12 @@ export async function listAccessiblePages(token) {
 export const QUEST_SCHEMA_VERSION = 1;
 export const READING_SCHEMA_VERSION = 1;
 
+// วันที่ "ออก" แต่ละเวอร์ชัน (วันที่ codebase เปลี่ยน schema จริง ๆ ไม่ใช่วันที่ user สั่ง migrate)
+// เพิ่ม entry ใหม่ทุกครั้งที่ bump เลขเวอร์ชันด้านบน — ใช้โชว์ใน migration log คู่กับ "วันที่อัปเดต"
+// (วันที่ user สั่ง migrate จริง) จะได้แยกออกว่า "เวอร์ชันนี้ออกเมื่อไหร่" vs "database นี้ตามทันเมื่อไหร่"
+export const QUEST_SCHEMA_RELEASES = { 1: "2026-06-21" };
+export const READING_SCHEMA_RELEASES = { 1: "2026-06-21" };
+
 // schema ของ quest/reading เป็น single source of truth — ใช้ทั้งตอนสร้าง database ใหม่
 // และตอนเช็ค (checkSchema) ว่า database ที่เชื่อมไว้ขาด property ไหนไปจากที่โค้ดต้องใช้
 export function questSchema(propMap) {
@@ -168,6 +174,9 @@ export async function ensureMigrationLogDataSource(token, parentPageId, existing
       properties: {
         "เหตุการณ์": { title: {} },
         "เวอร์ชัน": { number: {} },
+        "วันที่อัปเดต": { date: {} },        // วันที่ user สั่ง migrate จริง (ไม่ใช่ created_time ดิบ
+                                            // — ใส่เป็น property จะ sort/filter ใน Notion ได้ตรงกว่า)
+        "วันที่ออกเวอร์ชัน": { date: {} },   // วันที่ codebase เปลี่ยน schema เวอร์ชันนี้ (ดู *_SCHEMA_RELEASES)
         "รายละเอียด": { rich_text: {} }
       }
     }
@@ -190,20 +199,25 @@ export async function getMigrationLog(token, logDataSourceId) {
       id: page.id,
       eventTitle: props["เหตุการณ์"]?.title?.map(t => t.plain_text).join("") || "",
       version: props["เวอร์ชัน"]?.number ?? null,
+      updatedDate: props["วันที่อัปเดต"]?.date?.start || null,
+      releaseDate: props["วันที่ออกเวอร์ชัน"]?.date?.start || null,
       detail: props["รายละเอียด"]?.rich_text?.map(t => t.plain_text).join("") || "",
       createdTime: page.created_time
     };
   });
 }
 
-export async function logMigration(token, logDataSourceId, eventTitle, version, detail) {
+export async function logMigration(token, logDataSourceId, { eventTitle, version, updatedDate, releaseDate, detail }) {
+  const properties = {
+    "เหตุการณ์": { title: [{ text: { content: eventTitle } }] },
+    "เวอร์ชัน": { number: version },
+    "รายละเอียด": { rich_text: [{ text: { content: detail } }] }
+  };
+  if (updatedDate) properties["วันที่อัปเดต"] = { date: { start: updatedDate } };
+  if (releaseDate) properties["วันที่ออกเวอร์ชัน"] = { date: { start: releaseDate } };
   return call(token, "/pages", "POST", {
     parent: { type: "data_source_id", data_source_id: logDataSourceId },
-    properties: {
-      "เหตุการณ์": { title: [{ text: { content: eventTitle } }] },
-      "เวอร์ชัน": { number: version },
-      "รายละเอียด": { rich_text: [{ text: { content: detail } }] }
-    }
+    properties
   });
 }
 

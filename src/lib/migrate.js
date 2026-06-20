@@ -9,20 +9,21 @@ import * as notion from "./notion.js";
 
 // สร้าง database ใหม่ — schema ครบอยู่แล้วตั้งแต่สร้าง (ready เสมอ)
 // createFn: notion.createQuestDatabase หรือ notion.createReadingDatabase (เซ็นเหมือนกันทั้งคู่)
-export async function createDatabase({ token, parentPageId, propMap, createFn, schemaVersion, title }) {
+// updatedDateISO/releaseDate รับจาก host ตรง ๆ (ไม่เรียก "now" เองในไฟล์นี้ — core ต้อง deterministic)
+export async function createDatabase({ token, parentPageId, propMap, createFn, schemaVersion, releaseDate, updatedDateISO, title }) {
   const { databaseId, dataSourceId } = await createFn(token, parentPageId, propMap);
   return {
     databaseId, dataSourceId, parentPageId, ready: true, missing: {},
     log: {
       eventTitle: `สร้าง ${title} database ใหม่ (v${schemaVersion})`,
-      version: schemaVersion,
+      version: schemaVersion, updatedDate: updatedDateISO, releaseDate,
       detail: "สร้างใหม่ — schema ครบทุก property ตั้งแต่สร้าง"
     }
   };
 }
 
 // เชื่อม database เดิม + เช็ค schema ทันที (ผลเช็คใส่ใน log ด้วยเลย ไม่ว่า ready หรือไม่)
-export async function linkDatabase({ token, databaseId, schemaDef, schemaVersion, title }) {
+export async function linkDatabase({ token, databaseId, schemaDef, schemaVersion, releaseDate, updatedDateISO, title }) {
   const { dataSourceId, parentPageId } = await notion.resolveDataSourceId(token, databaseId);
   const { ready, missing } = await notion.checkSchema(token, dataSourceId, schemaDef);
   const detail = ready
@@ -30,7 +31,7 @@ export async function linkDatabase({ token, databaseId, schemaDef, schemaVersion
     : `เชื่อม database ที่มีอยู่ — ขาด property: ${Object.keys(missing).join(", ")} (กดอัปเดตเพื่อเติมให้ครบ)`;
   return {
     databaseId, dataSourceId, parentPageId, ready, missing,
-    log: { eventTitle: `เชื่อม ${title} database (v${schemaVersion})`, version: schemaVersion, detail }
+    log: { eventTitle: `เชื่อม ${title} database (v${schemaVersion})`, version: schemaVersion, updatedDate: updatedDateISO, releaseDate, detail }
   };
 }
 
@@ -40,13 +41,13 @@ export async function checkDatabase({ token, dataSourceId, schemaDef }) {
 }
 
 // อัปเดต property ที่ขาดเข้า database จริง — คืน log ให้ host ไปเขียนต่อ
-export async function updateDatabase({ token, dataSourceId, missing, schemaVersion, title }) {
+export async function updateDatabase({ token, dataSourceId, missing, schemaVersion, releaseDate, updatedDateISO, title }) {
   await notion.updateSchema(token, dataSourceId, missing);
   const addedNames = Object.keys(missing);
   return {
     log: {
       eventTitle: `อัปเดต ${title} database → v${schemaVersion}`,
-      version: schemaVersion,
+      version: schemaVersion, updatedDate: updatedDateISO, releaseDate,
       detail: `เพิ่ม property: ${addedNames.join(", ")}`
     }
   };
@@ -59,7 +60,7 @@ export async function writeLog({ token, parentPageId, existingLogDataSourceId, l
   const { databaseId, dataSourceId } = await notion.ensureMigrationLogDataSource(
     token, parentPageId, existingLogDataSourceId
   );
-  await notion.logMigration(token, dataSourceId, log.eventTitle, log.version, log.detail);
+  await notion.logMigration(token, dataSourceId, log);
   return { logDatabaseId: databaseId || null, logDataSourceId: dataSourceId };
 }
 

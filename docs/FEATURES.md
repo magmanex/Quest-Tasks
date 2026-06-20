@@ -123,9 +123,16 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
   ไม่พร้อม = enable + "อัปเดต database (+N)" เช็คอัตโนมัติทุกครั้งที่เปิดหน้า migrate (ถ้ามี dataSourceId แล้ว)
   และทุกครั้งหลัง create/link สำเร็จ
 - migration log: `notion.ensureMigrationLogDataSource` สร้าง database "🛠 Migration Log" (title + number
-  "เวอร์ชัน" + rich_text "รายละเอียด") ใต้ page แม่ของ database ที่ migrate ครั้งแรกที่มี event เกิดขึ้น
-  (idempotent — ครั้งถัดไปใช้ id เดิมจาก `cfg.migrationLogDataSourceId`) ใช้ Notion `created_time`
-  built-in เป็น timestamp ไม่มี date property ของตัวเอง
+  "เวอร์ชัน" + date "วันที่อัปเดต" + date "วันที่ออกเวอร์ชัน" + rich_text "รายละเอียด") ใต้ page แม่ของ
+  database ที่ migrate ครั้งแรกที่มี event เกิดขึ้น (idempotent — ครั้งถัดไปใช้ id เดิมจาก
+  `cfg.migrationLogDataSourceId`) ยังมี Notion `created_time` built-in ด้วย (= เวลาบันทึก log จริง)
+  แยกจาก 2 date property ข้างบนซึ่งเป็น **ความหมายทางธุรกิจ** ไม่ใช่ timestamp ของระบบ:
+  - **"วันที่อัปเดต"** = วันที่ user สั่ง migrate database นี้จริง (คำนวณจาก `bangkokToday()` ฝั่ง host
+    ตอนคลิกปุ่ม — core (`lib/migrate.js`) ไม่เรียก "now" เองเพื่อให้ deterministic/testable)
+  - **"วันที่ออกเวอร์ชัน"** = วันที่ codebase เปลี่ยน schema เวอร์ชันนั้นจริง ๆ มาจาก
+    `QUEST_SCHEMA_RELEASES`/`READING_SCHEMA_RELEASES` (notion.js) เช่น `{ 1: "2026-06-21" }` —
+    **ต้องเพิ่ม entry ใหม่คู่กับการ bump `*_SCHEMA_VERSION` ทุกครั้ง** ไม่งั้น log จะโชว์วันที่ของ
+    เวอร์ชันก่อนหน้าผิด ๆ
 - `notion.logMigration` เขียน 1 row ต่อ **ทุก connect event** ไม่ใช่แค่ตอนอัปเดตสำเร็จ — สร้างใหม่/เชื่อมเดิม/
   อัปเดต ทั้งสามเหตุการณ์เรียก `migrate.writeLog()` (lib/migrate.js) ผ่าน `writeLog()` ของ host
   (migrate/migrate.js — ผูกกับ `chrome.storage` ก่อนเรียก) เสมอ แม้ผลเช็คคือ "ครบอยู่แล้ว ไม่ต้อง

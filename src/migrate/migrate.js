@@ -5,6 +5,7 @@
 import * as notion from "../lib/notion.js";
 import * as migrate from "../lib/migrate.js";
 import { getConfig, setConfig } from "../lib/storage.js";
+import { bangkokToday } from "../lib/thaiDate.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -135,11 +136,14 @@ $("migrate-btn").addEventListener("click", async () => {
   $("migrate-btn").disabled = true;
   const notes = [];
   try {
+    const todayISO = bangkokToday();
     let cfg = await getConfig();
     if (!cfg.dataSourceId) {
       const r = await migrate.createDatabase({
         token, parentPageId: parentId, propMap: cfg.propMap, createFn: notion.createQuestDatabase,
-        schemaVersion: notion.QUEST_SCHEMA_VERSION, title: "quest"
+        schemaVersion: notion.QUEST_SCHEMA_VERSION,
+        releaseDate: notion.QUEST_SCHEMA_RELEASES[notion.QUEST_SCHEMA_VERSION],
+        updatedDateISO: todayISO, title: "quest"
       });
       await setConfig({ databaseId: r.databaseId, dataSourceId: r.dataSourceId, questParentPageId: r.parentPageId });
       await writeLog(r.parentPageId, r.log);
@@ -152,7 +156,9 @@ $("migrate-btn").addEventListener("click", async () => {
     if (!cfg.readingDataSourceId) {
       const r = await migrate.createDatabase({
         token, parentPageId: parentId, propMap: cfg.readingPropMap, createFn: notion.createReadingDatabase,
-        schemaVersion: notion.READING_SCHEMA_VERSION, title: "อ่านทีหลัง"
+        schemaVersion: notion.READING_SCHEMA_VERSION,
+        releaseDate: notion.READING_SCHEMA_RELEASES[notion.READING_SCHEMA_VERSION],
+        updatedDateISO: todayISO, title: "อ่านทีหลัง"
       });
       await setConfig({ readingDatabaseId: r.databaseId, readingDataSourceId: r.dataSourceId, readingParentPageId: r.parentPageId });
       await writeLog(r.parentPageId, r.log);
@@ -181,11 +187,13 @@ $("link-btn").addEventListener("click", async () => {
   if (!questId && !readingId) return setStatus($("migrate-status"), "ใส่ database id อย่างน้อย 1 อัน", "err");
   setStatus($("migrate-status"), "กำลังเชื่อม…", "busy");
   const notes = [];
+  const todayISO = bangkokToday();
   try {
     if (questId) {
       const cfg = await getConfig();
       const r = await migrate.linkDatabase({
-        token, databaseId: questId, schemaDef: notion.questSchema(cfg.propMap), schemaVersion: notion.QUEST_SCHEMA_VERSION, title: "quest"
+        token, databaseId: questId, schemaDef: notion.questSchema(cfg.propMap), schemaVersion: notion.QUEST_SCHEMA_VERSION,
+        releaseDate: notion.QUEST_SCHEMA_RELEASES[notion.QUEST_SCHEMA_VERSION], updatedDateISO: todayISO, title: "quest"
       });
       await setConfig({ databaseId: questId, dataSourceId: r.dataSourceId, questParentPageId: r.parentPageId });
       await writeLog(r.parentPageId, r.log);
@@ -195,7 +203,9 @@ $("link-btn").addEventListener("click", async () => {
       const cfg = await getConfig();
       const r = await migrate.linkDatabase({
         token, databaseId: readingId, schemaDef: notion.readingSchema(cfg.readingPropMap),
-        schemaVersion: notion.READING_SCHEMA_VERSION, title: "อ่านทีหลัง"
+        schemaVersion: notion.READING_SCHEMA_VERSION,
+        releaseDate: notion.READING_SCHEMA_RELEASES[notion.READING_SCHEMA_VERSION],
+        updatedDateISO: todayISO, title: "อ่านทีหลัง"
       });
       await setConfig({ readingDatabaseId: readingId, readingDataSourceId: r.dataSourceId, readingParentPageId: r.parentPageId });
       await writeLog(r.parentPageId, r.log);
@@ -219,7 +229,9 @@ $("quest-schema-btn").addEventListener("click", async () => {
   try {
     const r = await migrate.updateDatabase({
       token, dataSourceId: cfg.dataSourceId, missing: questMissing,
-      schemaVersion: notion.QUEST_SCHEMA_VERSION, title: "quest"
+      schemaVersion: notion.QUEST_SCHEMA_VERSION,
+      releaseDate: notion.QUEST_SCHEMA_RELEASES[notion.QUEST_SCHEMA_VERSION],
+      updatedDateISO: bangkokToday(), title: "quest"
     });
     await writeLog(cfg.questParentPageId, r.log);
     await checkQuestSchema();
@@ -236,7 +248,9 @@ $("reading-schema-btn").addEventListener("click", async () => {
   try {
     const r = await migrate.updateDatabase({
       token, dataSourceId: cfg.readingDataSourceId, missing: readingMissing,
-      schemaVersion: notion.READING_SCHEMA_VERSION, title: "อ่านทีหลัง"
+      schemaVersion: notion.READING_SCHEMA_VERSION,
+      releaseDate: notion.READING_SCHEMA_RELEASES[notion.READING_SCHEMA_VERSION],
+      updatedDateISO: bangkokToday(), title: "อ่านทีหลัง"
     });
     await writeLog(cfg.readingParentPageId, r.log);
     await checkReadingSchema();
@@ -275,10 +289,11 @@ async function renderLog() {
           <span class="log-version">v${row.version ?? "?"}</span>
         </div>
         <div class="log-detail"></div>
-        <div class="log-time"></div>`;
+        <div class="log-dates"></div>`;
       item.querySelector(".log-title").textContent = row.eventTitle;
       item.querySelector(".log-detail").textContent = row.detail;
-      item.querySelector(".log-time").textContent = fmtLogTime(row.createdTime);
+      item.querySelector(".log-dates").textContent =
+        `อัปเดตเมื่อ ${row.updatedDate || "—"} · เวอร์ชันนี้ออกเมื่อ ${row.releaseDate || "—"} · บันทึก ${fmtLogTime(row.createdTime)}`;
       container.appendChild(item);
     }
   } catch (e) {

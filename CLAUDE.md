@@ -85,6 +85,10 @@ src/
    ดู `notion.js` → `checkSchema` / `updateSchema` **หมายเหตุ: endpoint นี้อิงตาม pattern ของ
    2025-09-03 ยังไม่เคย test กับ Notion จริง ถ้า error 404/400 ให้เช็ค docs ก่อนแก้**
 
+5.6. **bump `*_SCHEMA_VERSION` ต้องคู่กับเพิ่ม entry ใน `*_SCHEMA_RELEASES`** (notion.js) เสมอ —
+   `{ [version]: "YYYY-MM-DD" }` คือวันที่ schema เวอร์ชันนั้นเปลี่ยนจริงในโค้ด (ไม่ใช่วันที่ user
+   migrate) ถ้าลืมเพิ่ม migration log จะโชว์ `releaseDate` เป็น `undefined`/ว่าง
+
 6. **วันที่ของ task มี 2 รูปแบบ** — เก็บใน Notion date property เป็น `date.start`:
    - **date-only** `"2026-06-17"` (งานทั้งวัน)
    - **datetime** `"2026-06-17T12:00:00+07:00"` (งานที่ตั้งเวลา — ต้องมี offset `+07:00` เสมอ)
