@@ -93,10 +93,19 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
   ทำให้หน้าตั้งค่ายาว งง ว่า step ไหนทำอะไร — แยกการจัดการ database ทั้งหมดไปหน้า `migrate/migrate.html`
   ต่างหาก (options.html เหลือแค่ token + การเตือน + ล้างการตั้งค่า) เปิดจากปุ่ม "ไปหน้าจัดการ database →"
   ใน step 1 ของ options.html (โผล่หลังทดสอบ token สำเร็จ)
-- `migrate.html` มี **section "Migrate" เดียว** ไม่แยก quest/reading เป็นคนละ section แล้ว — เลือก
-  parent page ครั้งเดียว กดปุ่มเดียว (`#migrate-btn` / `#link-btn`) จัดการได้ทั้ง 🎯 quest กับ 📚 อ่านทีหลัง
-  พร้อมกัน (ฝั่งไหนมี dataSourceId อยู่แล้ว/ไม่กรอก id ก็ข้ามไปเฉย ๆ ไม่ error) ส่วน schema-check ยังแยก
-  status/ปุ่มต่อ database อยู่ (เพราะ schema คนละชุดจริง ๆ) แต่อยู่ใต้ section เดียวกัน ไม่ใช่คนละ card
+- `migrate.html` มี **section "Migrate" เดียว** ไม่แยก quest/reading เป็นคนละ section แล้ว — **ไม่มี
+  toggle "สร้างใหม่ vs ใช้เดิม" อีกต่อไป** (ของเดิมงานเหมือนกันแค่ input คนละแบบ ผู้ใช้สับสนว่าต้อง
+  เลือกโหมดทำไม) เหลือฟอร์มเดียว: เลือก parent page (ไม่บังคับ) + วาง database id ของ quest/reading
+  ได้ทีละอัน (ไม่บังคับ) แล้วกดปุ่ม **"Migrate"** ปุ่มเดียว — `migrateOne()` (migrate.js) ตัดสินใจเองต่อ
+  database: มี id ที่วางไว้ → เชื่อมด้วย id นั้น, ไม่มี id แต่ยังไม่เคย migrate + เลือก page ไว้ → สร้างใหม่,
+  migrate ไปแล้วและไม่ได้วาง id ใหม่ → ข้าม (ฝั่งไหนมี dataSourceId อยู่แล้ว/ไม่กรอก id ก็ข้ามไปเฉย ๆ
+  ไม่ error) ส่วน schema-check ยังแยก status/ปุ่มต่อ database อยู่ (เพราะ schema คนละชุดจริง ๆ) แต่อยู่ใต้
+  section เดียวกัน ไม่ใช่คนละ card
+- **จำ parent page ที่เคยเลือกไว้** — `loadPages()` อ่าน `cfg.questParentPageId`/`readingParentPageId`
+  มา pre-select dropdown ให้ ไม่ต้องเลือก page ใหม่ทุกครั้งที่เปิดหน้า migrate ซ้ำ
+- **ซ่อนฟอร์ม migrate ทั้งหมดเมื่อตั้งค่าครบแล้ว** — `refreshMigrateFormVisibility()` ซ่อน `#migrate-form`
+  (เหลือแค่ schema-check + log) ทันทีที่ทั้ง `dataSourceId` และ `readingDataSourceId` มีค่าแล้ว แสดง
+  ข้อความ "ตั้งค่าเสร็จแล้ว ✓" แทน
 - ใต้ section migrate มี **section "Migration Log" แยก** ที่ query database "🛠 Migration Log" จาก
   Notion มาแสดงเป็นรายการ (เหตุการณ์ + เวอร์ชัน + รายละเอียด + เวลา) ตรง ๆ ไม่ต้องเปิด Notion เอง —
   ดู `notion.getMigrationLog()` + `migrate.fetchLog()` + `migrate.js → renderLog()`
@@ -133,6 +142,14 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
     `QUEST_SCHEMA_RELEASES`/`READING_SCHEMA_RELEASES` (notion.js) เช่น `{ 1: "2026-06-21" }` —
     **ต้องเพิ่ม entry ใหม่คู่กับการ bump `*_SCHEMA_VERSION` ทุกครั้ง** ไม่งั้น log จะโชว์วันที่ของ
     เวอร์ชันก่อนหน้าผิด ๆ
+- **bug ที่เจอ + วิธีแก้**: database "🛠 Migration Log" ที่สร้างไว้ก่อนเพิ่ม property วันที่ 2 ตัวนี้
+  จะไม่มี property นั้นในตัวเอง — ของเดิม `ensureMigrationLogDataSource` ถ้าเจอ `existingDataSourceId`
+  จะ return ทันทีไม่เช็ค schema เลย ทำให้ `logMigration` ครั้งถัดไปเขียน property ที่ data source ไม่มี
+  จริง Notion ปฏิเสธ (400) แล้ว `writeLog()` ฝั่ง host catch เงียบ ๆ ไว้ — log แถวใหม่ไม่ถูกสร้างเลย
+  ไม่ใช่แค่ไม่มีวันที่ **แก้แล้ว**: `ensureMigrationLogDataSource` self-heal ทุกครั้ง — เช็ค schema ของ
+  log database เดิมก่อนคืนค่า ถ้าขาด property ไหน `updateSchema()` เติมให้อัตโนมัติ (เหมือนที่ทำกับ
+  quest/reading) และ `writeLog()` ฝั่ง host ไม่กลืน error เงียบอีกแล้ว — error จะโผล่ต่อท้าย
+  `#migrate-status` ให้เห็นด้วย
 - `notion.logMigration` เขียน 1 row ต่อ **ทุก connect event** ไม่ใช่แค่ตอนอัปเดตสำเร็จ — สร้างใหม่/เชื่อมเดิม/
   อัปเดต ทั้งสามเหตุการณ์เรียก `migrate.writeLog()` (lib/migrate.js) ผ่าน `writeLog()` ของ host
   (migrate/migrate.js — ผูกกับ `chrome.storage` ก่อนเรียก) เสมอ แม้ผลเช็คคือ "ครบอยู่แล้ว ไม่ต้อง

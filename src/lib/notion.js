@@ -162,24 +162,36 @@ export async function updateSchema(token, dataSourceId, missing) {
   return call(token, `/data_sources/${dataSourceId}`, "PATCH", { properties: missing });
 }
 
+// schema ของ migration log เอง — แยกเป็นฟังก์ชันเพราะต้องใช้ทั้งตอนสร้างใหม่และตอน self-heal
+// (ดู ensureMigrationLogDataSource ด้านล่าง) เวลาเพิ่ม property ใหม่ในนี้ ของเก่าที่สร้างไว้ก่อนจะ
+// ได้ property เพิ่มอัตโนมัติตอนเรียกครั้งถัดไป ไม่ต้องลบ database log เดิมทิ้ง
+function migrationLogSchema() {
+  return {
+    "เหตุการณ์": { title: {} },
+    "เวอร์ชัน": { number: {} },
+    "วันที่อัปเดต": { date: {} },        // วันที่ user สั่ง migrate จริง (ไม่ใช่ created_time ดิบ
+                                        // — ใส่เป็น property จะ sort/filter ใน Notion ได้ตรงกว่า)
+    "วันที่ออกเวอร์ชัน": { date: {} },   // วันที่ codebase เปลี่ยน schema เวอร์ชันนี้ (ดู *_SCHEMA_RELEASES)
+    "รายละเอียด": { rich_text: {} }
+  };
+}
+
 // database สำหรับบันทึก migration log — สร้างครั้งแรกครั้งเดียว (idempotent ผ่าน existingDataSourceId)
+// **self-heal**: ถ้ามีอยู่แล้วแต่สร้างไว้ตอนยังไม่มี property บางตัว (เช่นเพิ่ม "วันที่อัปเดต" เข้ามาทีหลัง)
+// เช็ค+เติม property ที่ขาดให้ก่อนคืนค่าเสมอ ไม่งั้น logMigration ตัวถัดไปจะ error เงียบ ๆ เพราะ Notion
+// ปฏิเสธ property ที่ data source ยังไม่มี (เคสนี้เจอจริงตอน user รายงานว่า log ไม่มีวันที่ขึ้นมาเลย)
 // มี property "เวอร์ชัน" เป็น number ตั้งใจให้ sort/filter ใน Notion ได้ — เปิด database นี้แล้วเรียง
 // "เวอร์ชัน" จากมากไปน้อย แถวบนสุด = เวอร์ชันล่าสุดที่ database นั้นอยู่ ไม่ต้องไล่อ่านโค้ดเทียบเอง
 export async function ensureMigrationLogDataSource(token, parentPageId, existingDataSourceId) {
-  if (existingDataSourceId) return { databaseId: null, dataSourceId: existingDataSourceId };
+  if (existingDataSourceId) {
+    const { missing } = await checkSchema(token, existingDataSourceId, migrationLogSchema());
+    if (Object.keys(missing).length > 0) await updateSchema(token, existingDataSourceId, missing);
+    return { databaseId: null, dataSourceId: existingDataSourceId };
+  }
   const data = await call(token, "/databases", "POST", {
     parent: { type: "page_id", page_id: parentPageId },
     title: [{ type: "text", text: { content: "🛠 Migration Log" } }],
-    initial_data_source: {
-      properties: {
-        "เหตุการณ์": { title: {} },
-        "เวอร์ชัน": { number: {} },
-        "วันที่อัปเดต": { date: {} },        // วันที่ user สั่ง migrate จริง (ไม่ใช่ created_time ดิบ
-                                            // — ใส่เป็น property จะ sort/filter ใน Notion ได้ตรงกว่า)
-        "วันที่ออกเวอร์ชัน": { date: {} },   // วันที่ codebase เปลี่ยน schema เวอร์ชันนี้ (ดู *_SCHEMA_RELEASES)
-        "รายละเอียด": { rich_text: {} }
-      }
-    }
+    initial_data_source: { properties: migrationLogSchema() }
   });
   const dataSourceId = data?.data_sources?.[0]?.id;
   if (!dataSourceId) {

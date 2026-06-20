@@ -26,34 +26,31 @@
       <div class="block-num">🛠</div>
       <div class="block-body">
         <h2>Migrate</h2>
-        <p class="muted">
-          แชร์ page สัก 1 หน้าให้ integration ก่อน (กด <b>•••</b> → Connections → เลือก integration)
-          แล้วเลือกเป็นที่เก็บ database ด้านล่าง — กดทีเดียวจัดการได้ทั้ง 🎯 quest กับ 📚 อ่านทีหลัง
-        </p>
 
-        <div class="seg">
-          <button class="seg-btn active" data-mode="new">สร้าง database ใหม่</button>
-          <button class="seg-btn" data-mode="existing">ใช้ database เดิม</button>
-        </div>
+        <div id="migrate-form">
+          <p class="muted">
+            แชร์ page สัก 1 หน้าให้ integration ก่อน (กด <b>•••</b> → Connections → เลือก integration)
+            แล้วเลือกเป็นที่เก็บ database ด้านล่าง — กด Migrate ทีเดียวจัดการได้ทั้ง 🎯 quest กับ 📚 อ่านทีหลัง
+            (มี database อยู่แล้ว? วาง ID ในช่องด้านล่างแทนการเลือก page ก็ได้ — เว้นว่างฝั่งไหนไว้ = ข้ามฝั่งนั้น)
+          </p>
 
-        <div id="mode-new" class="mode">
           <div class="row">
             <select id="parent-select"><option value="">— เลือก page แม่ —</option></select>
             <button id="reload-pages" class="btn ghost">โหลดรายการ</button>
           </div>
-          <button id="migrate-btn" class="btn primary" disabled>สร้าง database ทั้งหมด</button>
+
+          <label class="field-label">🎯 Quest Tasks — database ID (ไม่บังคับ)</label>
+          <div class="row"><input id="existing-db" type="text" placeholder="วาง database id หรือ url ถ้ามีอยู่แล้ว"></div>
+          <label class="field-label">📚 อ่านทีหลัง — database ID (ไม่บังคับ)</label>
+          <div class="row"><input id="reading-existing-db" type="text" placeholder="วาง database id หรือ url ถ้ามีอยู่แล้ว"></div>
+
+          <button id="migrate-btn" class="btn primary" disabled>Migrate</button>
+          <div id="migrate-status" class="status"></div>
         </div>
 
-        <div id="mode-existing" class="mode" hidden>
-          <p class="muted small">วาง database ID หรือ URL ของแต่ละอัน (เว้นว่างได้ถ้าไม่ต้องการเชื่อมตัวนั้น)</p>
-          <label class="field-label">🎯 Quest Tasks</label>
-          <div class="row"><input id="existing-db" type="text" placeholder="quest database id หรือ url"></div>
-          <label class="field-label">📚 อ่านทีหลัง</label>
-          <div class="row"><input id="reading-existing-db" type="text" placeholder="reading database id หรือ url"></div>
-          <button id="link-btn" class="btn primary">เชื่อม database</button>
+        <div id="migrate-done-notice" class="status ok" hidden>
+          ตั้งค่าเสร็จแล้ว ✓ ทั้ง quest และ อ่านทีหลัง — ดูสถานะ schema ด้านล่าง
         </div>
-
-        <div id="migrate-status" class="status"></div>
 
         <!-- เช็คความพร้อม schema ของแต่ละ database -->
         <div class="schema-check" id="quest-schema-check" hidden>
