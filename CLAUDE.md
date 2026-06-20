@@ -24,13 +24,15 @@ src/
     ├─ quest window      เด้ง src/quest/quest.html (popup window) เมื่อมีงานถึงกำหนด
     ├─ context menu      "เพิ่มเป็น quest" จากข้อความที่เลือก
     └─ message API       popup/quest ส่ง message มาที่นี่
-                         (status/queryDue/queryUpcoming/add/complete/snooze/setDate/rescheduleAlarm/refreshBadge)
-  lib/notion.js          ตัวห่อ Notion REST API ทั้งหมด (อยู่ที่เดียว)
+                         (status/queryDue/queryUpcoming/add/complete/snooze/setDate/rescheduleAlarm/refreshBadge/
+                          queryUnread/addReading/markRead/archiveReading)
+  lib/notion.js          ตัวห่อ Notion REST API ทั้งหมด (อยู่ที่เดียว) — quest functions + reading list functions
   lib/storage.js         config + game state (chrome.storage.local) + ตรรกะ XP/level/streak/rankLetter
   lib/thaiDate.js        parser วันที่ภาษาไทย + helper จัดการวันที่ (timezone Asia/Bangkok)
-  popup/   (.html/js/css)   popup หลัก: ดูงานวันนี้ + quick-add + XP bar
+  popup/   (.html/js/css)   popup หลัก: ดูงานวันนี้ + quick-add + XP bar + ปุ่มเปิด "อ่านทีหลัง"
   quest/   (.html/js/css)   หน้าต่าง quest แบบเกม (signature UI) + animation + เสียง
-  options/ (.html/js/css)   หน้าตั้งค่า + flow migrate ครั้งแรก
+  reading/ (.html/js/css)   เมนู "อ่านทีหลัง" แยกจาก quest — เปิดเป็น tab ปกติ (ไม่ใช่ popup window)
+  options/ (.html/js/css)   หน้าตั้งค่า + flow migrate ครั้งแรก (step 1-3 quest, step 4 reading database)
   theme.css              design tokens ใช้ร่วมทุกหน้า (HTML อ้าง ../theme.css)
 ```
 
@@ -140,3 +142,6 @@ src/
 - [ ] **Two-way sync ที่สมบูรณ์** — ดึงงานล่วงหน้า 3 วัน (`queryUpcoming`) + แก้วัน/เลื่อนจาก popup ได้แล้ว
       แต่ยังไม่ sync การแก้ไขฝั่ง Notion กลับมาแบบ realtime (ต้องกด refresh / รอ alarm)
 - [ ] **เวลาในงาน sync ลำดับข้ามเครื่อง** — `taskOrder` เป็น local-only ถ้าใช้หลายเครื่องลำดับไม่ตรงกัน
+- [x] **อ่านทีหลัง (Reading List)** — เมนูแยกจาก quest, database คนละตัว, capture ผ่าน context menu
+      (เลือกข้อความ / คลิกขวาลิงก์), หน้า `src/reading/` เปิดเป็น tab ดู [`docs/FEATURES.md`](docs/FEATURES.md)
+      ที่ยังไม่ทำ: UI แก้/ดู property `บันทึก` (rich_text), filter ตาม `แท็ก`, pagination ถ้ารายการเกิน ~100
