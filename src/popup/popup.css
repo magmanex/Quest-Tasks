@@ -29,7 +29,9 @@ body { width: 360px; height: 600px; overflow: hidden; } /* fix สูง popup �
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 .brand { display: flex; align-items: center; gap: 9px; }
-.brand-mark { font-size: 22px; }
+.brand-mark { font-size: 22px; display: inline-flex; color: var(--gold); }
+.brand-mark svg, .nav-icon svg { display: block; }
+.icon-inline { width: 11px; height: 11px; vertical-align: -1px; color: var(--gold-soft); }
 .brand-name { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
 .appbar-actions { display: flex; align-items: center; gap: 6px; }
 .appbar-actions .icon-btn { color: var(--ink-faint); font-size: 15px; padding: 6px; border-radius: 7px; }
@@ -114,6 +116,7 @@ body { width: 360px; height: 600px; overflow: hidden; } /* fix สูง popup �
   text-align: center; padding: 28px 10px; color: var(--ink-faint);
 }
 .empty-mark { font-size: 30px; display: block; margin-bottom: 8px; }
+.empty-mark svg { display: block; margin: 0 auto; color: var(--ink-faint); }
 .empty-sub { font-size: 12px; }
 
 .setup-card {
@@ -190,6 +193,7 @@ body { width: 360px; height: 600px; overflow: hidden; } /* fix สูง popup �
   width: 100%; margin-top: 6px; background: var(--bg-card); border: 1px solid var(--border);
   border-radius: var(--radius-sm); padding: 9px 11px; color: var(--ink); font-size: 13px;
 }
+#view-reading .topbar { margin-bottom: 12px; } /* เว้นระยะ input ลิงก์ กับ list ด้านล่าง */
 .reading-url-input::placeholder { color: var(--ink-faint); }
 .reading-url-input:focus { border-color: var(--border-bright); }
 
