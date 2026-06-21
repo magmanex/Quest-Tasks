@@ -66,8 +66,12 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
 
 ### UI chrome (popup)
 - `send()` ห่อ `chrome.runtime.sendMessage` + นับ request ค้าง → โชว์ `#syncbar` (loading bar ทอง) ตอน sync
-- รายการวันนี้ (`.list`) สูงตามเนื้อหา (ไม่ fix height) popup จะสูงจน Chrome cap (~600px) แล้วค่อย scroll
-- footer มีปุ่ม "📚 อ่านทีหลัง" เปิด `src/reading/reading.html` เป็น browser tab แยก (ไม่ใช่ popup)
+- `.appbar` (brand + lvl + ปุ่ม settings/refresh) เป็น `position: sticky` ติดบนเสมอ ใช้ร่วมกันทั้ง 2 tab
+  `.topbar` (xp/quick-add ต่อ tab) ไม่ sticky แล้ว — เลื่อนตามเนื้อหาปกติ (ลดความซับซ้อนของ sticky ซ้อนกัน)
+- `.bottom-nav` เป็น `position: fixed` เต็มความกว้าง popup สลับ `#view-quest`/`#view-reading` ด้วย `hidden`
+  ปุ่มเป็น icon-only (เหมือน Facebook app บนมือถือ) ไม่มี text label, ใช้ `title`/`aria-label` แทน
+- `body` fix สูง 600px (`overflow: hidden`), `.view` (เนื้อหาต่อ tab) เป็น flex:1 + `overflow-y: auto`
+  scroll ในตัวเอง — ทำให้สลับ tab quest/อ่านทีหลัง แล้ว popup สูงเท่ากันเสมอ ไม่ resize ตามเนื้อหา
 
 ### Gamification
 - `lib/storage.js` → `xpForRank` / `levelFromXp` / `applyReward` / `updateStreakIfCleared`
@@ -80,9 +84,9 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
 - `lib/notion.js` → `createReadingDatabase` / `createReadingItem` / `getUnreadItems` / `markReadItem` / `archiveReadingItem`
 - capture: context menu 2 อัน ใน `background.js` — `addReadingFromSelection` (เลือกข้อความ, url = tab ปัจจุบัน),
   `addReadingFromLink` (คลิกขวาที่ลิงก์, url = `info.linkUrl`)
-- UI: **`src/reading/` หน้าแยกจาก quest** — เปิดเป็น browser tab ปกติด้วย `chrome.tabs.create` (ปุ่ม
-  "📚 อ่านทีหลัง" ใน footer ของ popup) ไม่ผสมกับ quest ในหน้าเดียว, ใช้ message API เดียวกับ popup
-  (`queryUnread`/`addReading`/`markRead`/`archiveReading` ผ่าน `chrome.runtime.sendMessage`)
+- UI: **อยู่ใน `popup.js` เดียวกับ quest** ไม่ใช่หน้าแยก — `#view-quest` / `#view-reading` เป็น 2 section
+  ใน DOM เดียวกัน สลับด้วย bottom nav icon-only (`.bottom-nav` / `switchView()`) ผ่าน `hidden` attribute
+  lazy-load: โหลด reading list ครั้งแรกตอนกดแท็บ (`readingLoaded` flag) ไม่โหลดถ้าไม่เคยกด
 - setup: `migrate.html` (section "อ่านทีหลัง" — `reading-parent-select` / `reading-migrate-btn` /
   `reading-link-btn`) reuse list of accessible pages ที่โหลดมาจาก section quest (เลือก parent page เดียวกันได้)
 
