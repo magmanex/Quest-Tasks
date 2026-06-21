@@ -121,6 +121,8 @@ src/
 1. แตกจาก `main` ล่าสุด: `git switch main && git pull && git switch -c feature/<slug>`
    (`<slug>` = kebab-case สั้น ๆ เช่น `feature/recurring-quest`)
 2. ทำงาน + commit บน branch (commit message ลงท้ายด้วย `Co-Authored-By:` ตามปกติ)
+   **ทุก PR ต้อง bump `version` ใน `manifest.json` เสมอ** (semver: patch=fix, minor=feature, major=breaking)
+   ไม่งั้น in-app update banner จะไม่เด้งให้ user (ดู section "Versioning") — merge แล้ว tag `vX.Y.Z` บน main
 3. **อัพเดท knowledge base ก่อน push เสมอ** (ดูด้านล่าง)
 4. `git push -u origin feature/<slug>`
 5. เปิด PR เข้า `main`: `gh pr create --base main --fill` (หรือใส่ title/body เอง)
