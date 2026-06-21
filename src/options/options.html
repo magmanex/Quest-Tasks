@@ -30,49 +30,17 @@
           <button id="test-btn" class="btn">ทดสอบ</button>
         </div>
         <div id="token-status" class="status"></div>
+
+        <!-- ไปหน้า migrate (จัดการ quest/reading database แยกหน้าต่างหาก) -->
+        <div class="row" id="migrate-nav" hidden style="margin-top:10px;">
+          <a id="goto-migrate" class="btn primary" href="../migrate/migrate.html">ไปหน้าจัดการ database →</a>
+        </div>
       </div>
     </section>
 
-    <!-- STEP 2: parent + migrate -->
-    <section class="block" id="step2" data-locked="true">
-      <div class="block-num">2</div>
-      <div class="block-body">
-        <h2>เตรียม database</h2>
-        <p class="muted">
-          แชร์ page สัก 1 หน้าให้ integration ก่อน (ในหน้านั้นกด <b>•••</b> → Connections → เลือก integration)
-          แล้วเลือกเป็นที่เก็บ database ด้านล่าง
-        </p>
-
-        <div class="seg">
-          <button class="seg-btn active" data-mode="new">สร้าง database ใหม่</button>
-          <button class="seg-btn" data-mode="existing">ใช้ database เดิม</button>
-        </div>
-
-        <!-- โหมดสร้างใหม่ -->
-        <div id="mode-new" class="mode">
-          <div class="row">
-            <select id="parent-select"><option value="">— เลือก page แม่ —</option></select>
-            <button id="reload-pages" class="btn ghost">โหลดรายการ</button>
-          </div>
-          <button id="migrate-btn" class="btn primary" disabled>สร้าง database</button>
-        </div>
-
-        <!-- โหมดใช้เดิม -->
-        <div id="mode-existing" class="mode" hidden>
-          <p class="muted small">วาง database ID หรือ URL ของ database ที่แชร์ให้ integration แล้ว</p>
-          <div class="row">
-            <input id="existing-db" type="text" placeholder="database id หรือ url">
-          </div>
-          <button id="link-btn" class="btn primary">เชื่อม</button>
-        </div>
-
-        <div id="migrate-status" class="status"></div>
-      </div>
-    </section>
-
-    <!-- STEP 3: settings -->
+    <!-- STEP 2: settings -->
     <section class="block" id="step3" data-locked="true">
-      <div class="block-num">3</div>
+      <div class="block-num">2</div>
       <div class="block-body">
         <h2>การเตือน</h2>
         <label class="field">
@@ -97,15 +65,10 @@
       </div>
     </section>
 
-    <!-- สรุปสถานะ -->
-    <section class="summary" id="summary" hidden>
-      <div class="summary-row"><span>สถานะ</span><b id="sum-state">—</b></div>
-      <div class="summary-row"><span>data source</span><code id="sum-ds">—</code></div>
-      <div class="summary-actions">
-        <button id="open-db" class="link">เปิด database ใน Notion</button>
-        <button id="reset" class="link danger">ล้างการตั้งค่า</button>
-      </div>
-    </section>
+    <!-- danger zone -->
+    <div class="summary-actions" style="justify-content: flex-end; border-top: none; margin-top: 4px;">
+      <button id="reset" class="link danger">ล้างการตั้งค่าทั้งหมด</button>
+    </div>
   </div>
 
   <script type="module" src="options.js"></script>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="../theme.css">
+  <link rel="stylesheet" href="../options/options.css">
+  <link rel="stylesheet" href="migrate.css">
+</head>
+<body>
+  <div class="page">
+    <header class="phead">
+      <span class="brand-mark">🛠</span>
+      <div>
+        <h1>จัดการ Database</h1>
+        <div class="eyebrow">สร้าง / เชื่อม / เช็คความพร้อม schema</div>
+      </div>
+    </header>
+
+    <p class="muted" id="no-token-notice" hidden>
+      ยังไม่ได้ตั้งค่า token — ไปหน้า
+      <a id="goto-options" style="cursor:pointer;">ตั้งค่า</a> เพื่อเชื่อมต่อ Notion ก่อน
+    </p>
+
+    <!-- Migrate: quest + reading ในขั้นตอนเดียว (คนละ database แต่ทำพร้อมกันได้) -->
+    <section class="block">
+      <div class="block-num">🛠</div>
+      <div class="block-body">
+        <h2>Migrate</h2>
+
+        <div id="migrate-form">
+          <p class="muted">
+            แชร์ page สัก 1 หน้าให้ integration ก่อน (กด <b>•••</b> → Connections → เลือก integration)
+            แล้วเลือกเป็นที่เก็บ database ด้านล่าง — กด Migrate ทีเดียวจัดการได้ทั้ง 🎯 quest กับ 📚 อ่านทีหลัง
+            (มี database อยู่แล้ว? วาง ID ในช่องด้านล่างแทนการเลือก page ก็ได้ — เว้นว่างฝั่งไหนไว้ = ข้ามฝั่งนั้น)
+          </p>
+
+          <div class="row">
+            <select id="parent-select"><option value="">— เลือก page แม่ —</option></select>
+            <button id="reload-pages" class="btn ghost">โหลดรายการ</button>
+          </div>
+
+          <label class="field-label">🎯 Quest Tasks — database ID (ไม่บังคับ)</label>
+          <div class="row"><input id="existing-db" type="text" placeholder="วาง database id หรือ url ถ้ามีอยู่แล้ว"></div>
+          <label class="field-label">📚 อ่านทีหลัง — database ID (ไม่บังคับ)</label>
+          <div class="row"><input id="reading-existing-db" type="text" placeholder="วาง database id หรือ url ถ้ามีอยู่แล้ว"></div>
+
+          <button id="migrate-btn" class="btn primary" disabled>Migrate</button>
+          <div id="migrate-status" class="status"></div>
+        </div>
+
+        <div id="migrate-done-notice" class="status ok" hidden>
+          ตั้งค่าเสร็จแล้ว ✓ ทั้ง quest และ อ่านทีหลัง — ดูสถานะ schema ด้านล่าง
+        </div>
+
+        <!-- เช็คความพร้อม schema ของแต่ละ database -->
+        <div class="schema-check" id="quest-schema-check" hidden>
+          <label class="field-label">🎯 Quest Tasks</label>
+          <div id="quest-schema-status" class="status"></div>
+          <button id="quest-schema-btn" class="btn primary" disabled>เป็นปัจจุบันแล้ว ✓</button>
+        </div>
+        <div class="schema-check" id="reading-schema-check" hidden>
+          <label class="field-label">📚 อ่านทีหลัง</label>
+          <div id="reading-schema-status" class="status"></div>
+          <button id="reading-schema-btn" class="btn primary" disabled>เป็นปัจจุบันแล้ว ✓</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Migration Log: ดึงตรงจาก Notion มาแสดง -->
+    <section class="block">
+      <div class="block-num">📜</div>
+      <div class="block-body">
+        <div class="log-head">
+          <h2>Migration Log</h2>
+          <button id="refresh-log" class="btn ghost">รีเฟรช</button>
+        </div>
+        <p class="muted">ประวัติการสร้าง/เชื่อม/อัปเดต database ดึงข้อมูลตรงจาก Notion ("🛠 Migration Log")</p>
+        <div id="log-list" class="log-list"></div>
+      </div>
+    </section>
+
+    <!-- สรุปสถานะ -->
+    <section class="summary" id="summary" hidden>
+      <div class="summary-row"><span>quest data source</span><code id="sum-ds">—</code></div>
+      <div class="summary-row"><span>reading data source</span><code id="sum-reading-ds">—</code></div>
+      <div class="summary-actions">
+        <button id="open-db" class="link" hidden>เปิด quest database</button>
+        <button id="open-reading-db" class="link" hidden>เปิด reading database</button>
+        <button id="open-log" class="link" hidden>เปิด log ใน Notion</button>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="migrate.js"></script>
+</body>
+</html>

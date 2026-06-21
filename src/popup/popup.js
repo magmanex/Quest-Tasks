@@ -4,6 +4,16 @@ import { levelFromXp, rankLetter } from "../lib/storage.js";
 
 const $ = (id) => document.getElementById(id);
 
+// minimal SVG icon set (stroke=currentColor) ใช้แทน emoji ใน empty/error state
+const svg = (paths) =>
+  `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor"
+        stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+const ICONS = {
+  clear: svg('<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9"/>'),
+  inbox: svg('<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>'),
+  warn: svg('<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
+};
+
 // ทุก action คุยกับ Notion ผ่าน background -> โชว์ syncbar ตลอดที่ยังมี request ค้าง
 let pending = 0;
 const send = (msg) => {
@@ -44,7 +54,7 @@ function renderGame(game) {
   $("lvl-num").textContent = level;
   $("xp-fill").style.width = `${Math.min(100, (intoLevel / needForNext) * 100)}%`;
   $("xp-text").textContent = `${intoLevel} / ${needForNext} XP`;
-  $("streak-text").textContent = `🔥 ${game.streak} วัน`;
+  $("streak-num").textContent = game.streak;
 }
 
 // --- ลำดับ task ภายในวัน: เก็บ local เท่านั้น (chrome.storage) ไม่ยุ่ง Notion ---
@@ -150,7 +160,7 @@ function renderList(tasks, today) {
   list.innerHTML = "";
   if (tasks.length === 0) {
     list.innerHTML = `<div class="empty">
-      <span class="empty-mark">🧘</span>
+      <span class="empty-mark">${ICONS.clear}</span>
       <div>เคลียร์ครบแล้ว</div>
       <div class="empty-sub">ไม่มี quest ค้างวันนี้</div>
     </div>`;
@@ -296,14 +306,14 @@ async function load() {
   const status = await send({ action: "status" });
 
   if (!status?.setup) {
-    document.querySelector(".list").innerHTML = `
+    $("list").innerHTML = `
       <div class="setup-card">
         <h2>ยังไม่ได้เชื่อม Notion</h2>
         <p>ตั้งค่าครั้งแรกเพื่อสร้าง database และเริ่มใช้งาน</p>
         <button class="setup-btn" id="goto-setup">เปิดหน้าตั้งค่า</button>
       </div>`;
     $("goto-setup").addEventListener("click", () => chrome.runtime.openOptionsPage());
-    document.querySelector(".quick").style.display = "none";
+    $("quick-row").style.display = "none";
     $("upcoming").hidden = true;
     return;
   }
@@ -320,11 +330,122 @@ async function load() {
     renderUpcoming(lastUpcoming, today);
   } else {
     $("upcoming").hidden = true;
-    document.querySelector(".list").innerHTML =
-      `<div class="empty"><span class="empty-mark">⚠️</span><div>ดึงข้อมูลไม่ได้</div>
+    $("list").innerHTML =
+      `<div class="empty"><span class="empty-mark">${ICONS.warn}</span><div>ดึงข้อมูลไม่ได้</div>
        <div class="empty-sub">${res?.error || ""}</div></div>`;
   }
 }
+
+// ---------- อ่านทีหลัง ----------
+
+let readingLoaded = false;
+
+function fmtCreated(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("th-TH", { day: "numeric", month: "short" });
+}
+
+function renderReadingList(items) {
+  const list = $("reading-list");
+  list.innerHTML = "";
+  if (items.length === 0) {
+    list.innerHTML = `<div class="empty">
+      <span class="empty-mark">${ICONS.inbox}</span>
+      <div>ยังไม่มีอะไรค้างอ่าน</div>
+      <div class="empty-sub">คลิกขวาตรงข้อความหรือลิงก์ → "เก็บไว้อ่านทีหลัง"</div>
+    </div>`;
+    return;
+  }
+  for (const item of items) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="card-top">
+        <span class="card-title"></span>
+        <span class="card-date">${fmtCreated(item.createdTime)}</span>
+      </div>
+      <div class="card-tags"></div>
+      <div class="card-actions">
+        <button class="act act-done">✓ อ่านแล้ว</button>
+        <button class="act act-open" ${item.url ? "" : "hidden"}>↗ เปิดลิงก์</button>
+        <button class="act act-archive">ลบ</button>
+      </div>`;
+    card.querySelector(".card-title").textContent = item.title;
+    const tagsEl = card.querySelector(".card-tags");
+    for (const tag of item.tags) {
+      const chip = document.createElement("span");
+      chip.className = "tag";
+      chip.textContent = tag;
+      tagsEl.appendChild(chip);
+    }
+    card.querySelector(".act-done").addEventListener("click", () => markReadingItem(card, item));
+    card.querySelector(".act-archive").addEventListener("click", () => archiveReadingItem(card, item));
+    if (item.url) card.querySelector(".act-open").addEventListener("click", () => chrome.tabs.create({ url: item.url }));
+    list.appendChild(card);
+  }
+}
+
+async function markReadingItem(card, item) {
+  card.classList.add("clearing");
+  await send({ action: "markRead", pageId: item.id });
+  setTimeout(loadReading, 250);
+}
+
+async function archiveReadingItem(card, item) {
+  if (!confirm(`ลบ "${item.title}" ออกจากลิสต์?`)) return;
+  card.classList.add("clearing");
+  await send({ action: "archiveReading", pageId: item.id });
+  setTimeout(loadReading, 250);
+}
+
+async function quickAddReading() {
+  const title = $("reading-quick-title").value.trim();
+  if (!title) return;
+  const url = $("reading-quick-url").value.trim() || undefined;
+  $("reading-quick-title").value = "";
+  $("reading-quick-url").value = "";
+  await send({ action: "addReading", title, url });
+  loadReading();
+}
+
+async function loadReading() {
+  const status = await send({ action: "status" });
+  if (!status?.readingSetup) {
+    $("reading-list").innerHTML = `<div class="setup-card">
+      <h2>ยังไม่ได้สร้าง database "อ่านทีหลัง"</h2>
+      <p>เปิดหน้าตั้งค่า → จัดการ database เพื่อสร้างหรือเชื่อม database</p>
+      <button class="setup-btn" id="goto-reading-setup">เปิดหน้าตั้งค่า</button>
+    </div>`;
+    $("goto-reading-setup").addEventListener("click", () => chrome.runtime.openOptionsPage());
+    return;
+  }
+  const res = await send({ action: "queryUnread" });
+  if (res?.ok) {
+    readingLoaded = true;
+    renderReadingList(res.items);
+  } else {
+    $("reading-list").innerHTML = `<div class="empty"><span class="empty-mark">${ICONS.warn}</span><div>ดึงข้อมูลไม่ได้</div>
+      <div class="empty-sub">${res?.error || ""}</div></div>`;
+  }
+}
+
+// ---------- สลับ tab แบบ bottom nav ----------
+
+let activeView = "quest";
+
+function switchView(view) {
+  if (view === activeView) return;
+  activeView = view;
+  $("view-quest").hidden = view !== "quest";
+  $("view-reading").hidden = view !== "reading";
+  document.querySelectorAll(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
+  if (view === "reading" && !readingLoaded) loadReading();
+}
+document.querySelectorAll(".nav-btn").forEach((btn) => btn.addEventListener("click", () => switchView(btn.dataset.view)));
+
+$("reading-quick-add").addEventListener("click", quickAddReading);
+$("reading-quick-title").addEventListener("keydown", (e) => { if (e.key === "Enter") quickAddReading(); });
+$("reading-quick-url").addEventListener("keydown", (e) => { if (e.key === "Enter") quickAddReading(); });
 
 $("quick-add").addEventListener("click", quickAdd);
 $("quick-input").addEventListener("keydown", (e) => { if (e.key === "Enter") quickAdd(); });
@@ -333,7 +454,7 @@ $("lvl-badge").addEventListener("click", () => chrome.runtime.openOptionsPage())
 $("refresh").addEventListener("click", async () => {
   const btn = $("refresh");
   btn.classList.add("spinning");
-  try { await load(); } finally { btn.classList.remove("spinning"); }
+  try { await (activeView === "reading" ? loadReading() : load()); } finally { btn.classList.remove("spinning"); }
 });
 
 makeDropZone($("list"), null); // ลากมาที่ลิสต์วันนี้ = ตั้งเป็นวันนี้

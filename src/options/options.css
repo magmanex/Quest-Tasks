@@ -61,6 +61,9 @@ body { background: var(--bg); }
 .status.err { color: var(--rose); }
 .status.busy { color: var(--gold-soft); }
 
+.schema-check { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.schema-check .btn { margin-top: 6px; }
+
 .summary {
   background: var(--bg-raised); border: 1px solid var(--border-bright);
   border-radius: var(--radius); padding: 18px;

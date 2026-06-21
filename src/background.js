@@ -6,7 +6,7 @@
 // (popup/options เรียก notion.js ตรงก็ได้ แต่ action สำคัญเรา route ผ่านนี่เพื่อความ consistent)
 
 import * as notion from "./lib/notion.js";
-import { getConfig, setConfig, isSetupComplete, applyReward, updateStreakIfCleared } from "./lib/storage.js";
+import { getConfig, setConfig, isSetupComplete, isReadingSetupComplete, applyReward, updateStreakIfCleared } from "./lib/storage.js";
 import { bangkokToday, addDays } from "./lib/thaiDate.js";
 
 const ALARM_NAME = "questCheck";
@@ -20,6 +20,16 @@ chrome.runtime.onInstalled.addListener(async () => {
     id: "addQuestFromSelection",
     title: 'เพิ่มเป็น quest: "%s"',
     contexts: ["selection"]
+  });
+  chrome.contextMenus.create({
+    id: "addReadingFromSelection",
+    title: 'เก็บไว้อ่านทีหลัง: "%s"',
+    contexts: ["selection"]
+  });
+  chrome.contextMenus.create({
+    id: "addReadingFromLink",
+    title: "เก็บลิงก์นี้ไว้อ่านทีหลัง",
+    contexts: ["link"]
   });
   refreshBadge();
 });
@@ -121,25 +131,50 @@ chrome.windows.onRemoved.addListener((id) => {
 
 // ---------- context menu ----------
 
-chrome.contextMenus.onClicked.addListener(async (info) => {
-  if (info.menuItemId !== "addQuestFromSelection" || !info.selectionText) return;
-  if (!(await isSetupComplete())) {
-    notify("ยังไม่ได้ตั้งค่า", "เปิดหน้าตั้งค่าของ extension ก่อนนะ");
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId === "addQuestFromSelection" && info.selectionText) {
+    if (!(await isSetupComplete())) {
+      notify("ยังไม่ได้ตั้งค่า", "เปิดหน้าตั้งค่าของ extension ก่อนนะ");
+      return;
+    }
+    const cfg = await getConfig();
+    try {
+      await notion.createTask(cfg.token, cfg.dataSourceId, cfg.propMap, {
+        title: info.selectionText.trim().slice(0, 200),
+        dateISO: bangkokToday(),
+        rank: "B - ปกติ"
+      });
+      notify("เพิ่ม quest แล้ว", info.selectionText.trim().slice(0, 60));
+      refreshBadge();
+    } catch (e) {
+      notify("เพิ่มไม่สำเร็จ", e.message);
+    }
+    return;
+  }
+
+  if (info.menuItemId === "addReadingFromSelection" && info.selectionText) {
+    await addReadingFromContextMenu(info.selectionText.trim().slice(0, 200), tab?.url);
+    return;
+  }
+
+  if (info.menuItemId === "addReadingFromLink" && info.linkUrl) {
+    await addReadingFromContextMenu(info.selectionText?.trim().slice(0, 200) || info.linkUrl, info.linkUrl);
+  }
+});
+
+async function addReadingFromContextMenu(title, url) {
+  if (!(await isReadingSetupComplete())) {
+    notify("ยังไม่ได้ตั้งค่า", "เปิดหน้าตั้งค่าของ extension แล้วสร้าง database อ่านทีหลังก่อนนะ");
     return;
   }
   const cfg = await getConfig();
   try {
-    await notion.createTask(cfg.token, cfg.dataSourceId, cfg.propMap, {
-      title: info.selectionText.trim().slice(0, 200),
-      dateISO: bangkokToday(),
-      rank: "B - ปกติ"
-    });
-    notify("เพิ่ม quest แล้ว", info.selectionText.trim().slice(0, 60));
-    refreshBadge();
+    await notion.createReadingItem(cfg.token, cfg.readingDataSourceId, cfg.readingPropMap, { title, url });
+    notify("เก็บไว้อ่านทีหลังแล้ว", title);
   } catch (e) {
-    notify("เพิ่มไม่สำเร็จ", e.message);
+    notify("เก็บไม่สำเร็จ", e.message);
   }
-});
+}
 
 // ---------- message API (เรียกจาก popup / quest) ----------
 
@@ -156,7 +191,12 @@ async function handleMessage(msg) {
 
   switch (msg.action) {
     case "status":
-      return { ok: true, setup: Boolean(cfg.token && cfg.dataSourceId), game: cfg.game };
+      return {
+        ok: true,
+        setup: Boolean(cfg.token && cfg.dataSourceId),
+        readingSetup: Boolean(cfg.token && cfg.readingDataSourceId),
+        game: cfg.game
+      };
 
     case "queryDue": {
       const tasks = await notion.getDueTasks(cfg.token, cfg.dataSourceId, cfg.propMap, today);
@@ -201,6 +241,26 @@ async function handleMessage(msg) {
       updateBadge(tasks.length);
       return { ok: true, remaining: tasks.length };
     }
+
+    case "queryUnread": {
+      const items = await notion.getUnreadItems(cfg.token, cfg.readingDataSourceId, cfg.readingPropMap);
+      return { ok: true, items };
+    }
+
+    case "addReading": {
+      const item = await notion.createReadingItem(cfg.token, cfg.readingDataSourceId, cfg.readingPropMap, {
+        title: msg.title, url: msg.url, tag: msg.tag
+      });
+      return { ok: true, item };
+    }
+
+    case "markRead":
+      await notion.markReadItem(cfg.token, msg.pageId, cfg.readingPropMap);
+      return { ok: true };
+
+    case "archiveReading":
+      await notion.archiveReadingItem(cfg.token, msg.pageId);
+      return { ok: true };
 
     case "rescheduleAlarm":
       await ensureAlarm();
