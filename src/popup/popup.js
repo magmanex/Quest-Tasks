@@ -459,11 +459,15 @@ $("refresh").addEventListener("click", async () => {
 
 makeDropZone($("list"), null); // ลากมาที่ลิสต์วันนี้ = ตั้งเป็นวันนี้
 
-// เช็คเวอร์ชันใหม่จาก GitHub (เงียบ ๆ ไม่โชว์ syncbar) — มีใหม่ก็แต้มจุดแดงที่ไอคอนตั้งค่า
+// เช็คเวอร์ชันใหม่จาก GitHub (เงียบ ๆ ไม่โชว์ syncbar) — มีใหม่ก็เด้งแบนเนอร์ในหน้า popup + จุดแดงที่ไอคอน
 async function checkUpdate() {
   const res = await chrome.runtime.sendMessage({ action: "checkUpdate" }).catch(() => null);
-  $("open-options").classList.toggle("has-update", Boolean(res?.ok && res.outdated));
+  const outdated = Boolean(res?.ok && res.outdated);
+  $("open-options").classList.toggle("has-update", outdated);
+  $("update-banner").hidden = !outdated;
+  if (outdated) $("ub-ver").textContent = `${res.latest} (คุณใช้ ${res.current})`;
 }
+$("ub-reload").addEventListener("click", () => chrome.runtime.reload());
 
 loadOrder().then(load);
 checkUpdate();

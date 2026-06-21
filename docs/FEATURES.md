@@ -83,7 +83,8 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
   GitHub raw manifest (`RAW_MANIFEST_URL`, branch `main`) — fetch อย่างเดียว ไม่แตะ chrome.* (portable)
 - background `checkUpdate` (background.js): เทียบกับ `chrome.runtime.getManifest().version`, cache 6 ชม.
   ใน `config.updateCheck {latest, checkedAt}` (`force:true` ข้าม cache), เน็ตล่ม → คืน cache เดิม (`stale:true`)
-- popup.js → `checkUpdate()` เรียกตอนเปิด (ไม่ผ่าน syncbar) outdated → `.icon-btn.has-update` (จุดแดงที่ไอคอนตั้งค่า)
+- popup.js → `checkUpdate()` เรียกตอนเปิด (ไม่ผ่าน syncbar) outdated → แบนเนอร์ `#update-banner` ในหน้า popup
+  (ปุ่ม reload + เลขเวอร์ชัน) + จุดแดงที่ไอคอนตั้งค่า (`.icon-btn.has-update`)
 - options.js → `initUpdate()` โชว์ `v<version>` ที่หัว + แบนเนอร์ `#update-banner` ถ้ามีใหม่;
   ปุ่ม "โหลดใหม่" = `chrome.runtime.reload()`, ลิงก์ "ดูใน GitHub" = `REPO_URL`
 - **ข้อจำกัด:** unpacked extension เขียนทับไฟล์เองไม่ได้ → ผู้ใช้ `git pull` เองแล้วกดปุ่ม reload (ดู CLAUDE.md → Versioning)
