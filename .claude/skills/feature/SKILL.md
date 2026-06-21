@@ -45,7 +45,19 @@ session understands the project without re-reading all the code (saves tokens):
 Edit only what actually changed this round; don't rewrite whole files. If the
 change has no context impact (typo/format), note "no KB change" and skip.
 
-## 4. Open the PR (when feature is done)
+## 4. Bump the version (REQUIRED before every PR)
+
+**Every PR must bump `version` in `manifest.json`** (semver). The in-app update
+notice compares this number on GitHub `main` against the installed copy — if a PR
+merges without bumping it, users never get the "new version" banner.
+
+- patch (`0.1.0` → `0.1.1`) = bugfix; minor (`0.1.0` → `0.2.0`) = new feature; major = breaking.
+- Bump on the feature branch so it lands with the merge.
+- After merge, tag it on `main`: `git tag vX.Y.Z && git push --tags`.
+
+See CLAUDE.md → "Versioning & การแจ้งเตือนอัปเดต".
+
+## 5. Open the PR (when feature is done)
 
 ```
 git push -u origin feature/<slug>
@@ -57,7 +69,7 @@ gh pr create --base main --fill
   `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
 - Report the PR URL back to the user. Do **not** merge unless they ask.
 
-## 5. After merge (optional)
+## 6. After merge (optional)
 
 ```
 git switch main && git pull

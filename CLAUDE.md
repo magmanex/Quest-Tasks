@@ -25,13 +25,15 @@ src/
     ├─ context menu      "เพิ่มเป็น quest" จากข้อความที่เลือก
     └─ message API       popup/quest ส่ง message มาที่นี่
                          (status/queryDue/queryUpcoming/add/complete/snooze/setDate/rescheduleAlarm/refreshBadge/
-                          queryUnread/addReading/markRead/archiveReading)
+                          queryUnread/addReading/markRead/archiveReading/checkUpdate)
   lib/notion.js          ตัวห่อ Notion REST API ทั้งหมด (อยู่ที่เดียว) — quest functions + reading list functions
   lib/migrate.js         orchestration ของ create/link/check/update schema + migration log — **pure JS
                          ไม่แตะ chrome.* เลย** (import แค่ notion.js) ตั้งใจเผื่อพอร์ตไป host อื่นในอนาคต
                          (เช่น Scriptable บน iOS) ดู "สถาปัตยกรรมแบบ cross-platform" ด้านล่าง
   lib/storage.js         config + game state (chrome.storage.local) + ตรรกะ XP/level/streak/rankLetter
   lib/thaiDate.js        parser วันที่ภาษาไทย + helper จัดการวันที่ (timezone Asia/Bangkok)
+  lib/version.js         เช็คเวอร์ชันล่าสุดจาก GitHub raw manifest + compareVersions (semver)
+                         — portable (fetch อย่างเดียว ไม่แตะ chrome.*) เหมือน notion.js
   popup/   (.html/js/css)   popup หลัก: 2 tab สลับด้วย bottom nav แบบ icon-only (เหมือน mobile app) —
                             "Quest" (งานวันนี้ + quick-add + XP bar) / "อ่านทีหลัง" (list + quick-add)
                             ทั้งสอง tab อยู่ใน DOM เดียวกัน สลับด้วย `hidden` attribute ไม่เปิด tab/window ใหม่
@@ -119,6 +121,8 @@ src/
 1. แตกจาก `main` ล่าสุด: `git switch main && git pull && git switch -c feature/<slug>`
    (`<slug>` = kebab-case สั้น ๆ เช่น `feature/recurring-quest`)
 2. ทำงาน + commit บน branch (commit message ลงท้ายด้วย `Co-Authored-By:` ตามปกติ)
+   **ทุก PR ต้อง bump `version` ใน `manifest.json` เสมอ** (semver: patch=fix, minor=feature, major=breaking)
+   ไม่งั้น in-app update banner จะไม่เด้งให้ user (ดู section "Versioning") — merge แล้ว tag `vX.Y.Z` บน main
 3. **อัพเดท knowledge base ก่อน push เสมอ** (ดูด้านล่าง)
 4. `git push -u origin feature/<slug>`
 5. เปิด PR เข้า `main`: `gh pr create --base main --fill` (หรือใส่ title/body เอง)
@@ -139,6 +143,20 @@ src/
 - ถ้าเปลี่ยนพฤติกรรมที่ผู้ใช้เห็น → อัพเดท `README.md` ด้วย
 
 ถ้ารอบนั้นไม่กระทบบริบท (เช่นแก้ typo/format) เขียนกำกับใน commit/PR ว่า "no KB change" ได้
+
+## Versioning & การแจ้งเตือนอัปเดต
+
+- **เวอร์ชัน = `version` ใน `manifest.json`** (semver) เป็น single source ของเวอร์ชัน ตอน release
+  ฟีเจอร์ใหม่ให้ bump เลขนี้ใน PR แล้ว tag `vX.Y.Z` หลัง merge เข้า main (`git tag v0.2.0 && git push --tags`)
+- **เช็คอัปเดต** — `lib/version.js` ดึง `version` จาก GitHub raw manifest (`main` branch) มาเทียบกับ
+  `chrome.runtime.getManifest().version` ผ่าน `compareVersions` background action `checkUpdate` cache ผล
+  6 ชม. (`updateCheck` ใน storage, `force:true` ข้าม cache) raw.githubusercontent ส่ง CORS `*` จึง
+  **ไม่ต้องเพิ่ม host_permissions**
+- **popup** เรียก `checkUpdate` ตอนเปิด ถ้า outdated แต้มจุดแดงที่ไอคอนตั้งค่า (`.icon-btn.has-update`)
+- **options** โชว์เวอร์ชันปัจจุบัน + แบนเนอร์ถ้ามีใหม่ ปุ่ม "โหลดใหม่" = `chrome.runtime.reload()`
+- **ข้อจำกัด (สำคัญ)** — unpacked MV3 extension **เขียนทับไฟล์ตัวเองไม่ได้** (install dir อ่านอย่างเดียว
+  ไม่มี chrome API) ดังนั้น "อัปเดต" = ผู้ใช้ `git pull` เองในโฟลเดอร์ แล้วกดปุ่มให้ extension reload จากไฟล์ใหม่
+  ถ้าอยากได้ auto-update จริง ต้อง publish ลง Chrome Web Store (Chrome จัดการให้) หรือ self-host CRX + `update_url`
 
 ## วิธี load / ทดสอบ
 
@@ -169,6 +187,10 @@ src/
 - [ ] **Notification action buttons** — ปุ่ม Done/Snooze บน system notification ยังไม่ทำ
 - [ ] **เลือก rank ตอน quick-add** — ตอนนี้ quick-add ตั้ง rank เป็น "B - ปกติ" ตายตัว
 - [ ] **UI แก้ propMap** — ถ้าใช้ database เดิมที่ชื่อ column ต่าง ต้องแก้ใน code/storage เอง ยังไม่มี UI
+- [x] **แจ้งเตือนเวอร์ชันใหม่จาก GitHub** — เช็ค `version` ใน manifest บน main เทียบกับที่ติดตั้ง
+      (`lib/version.js` + action `checkUpdate`) outdated → จุดแดงที่ไอคอน popup + แบนเนอร์ในหน้า options
+      ปุ่มโหลดใหม่ = `chrome.runtime.reload()` **ข้อจำกัด: unpacked extension เขียนทับไฟล์เองไม่ได้
+      → ผู้ใช้ต้อง `git pull` เองก่อนกดปุ่ม** (true auto-update ต้อง Web Store / self-host CRX) ดู section "Versioning"
 - [ ] **OAuth** — ตอนนี้ใช้ internal token (plaintext ใน storage) ปลอดภัยพอสำหรับใช้เอง
       แต่ถ้าจะ publish ลง Chrome Web Store ต้องทำ OAuth flow + backend แลก token
 - [ ] **Two-way sync ที่สมบูรณ์** — ดึงงานล่วงหน้า 3 วัน (`queryUpcoming`) + แก้วัน/เลื่อนจาก popup ได้แล้ว
