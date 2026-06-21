@@ -3,6 +3,7 @@
 // หน้านี้เป็น extension page จึงเรียก notion.js ตรงได้ (ไม่ติด CORS)
 import * as notion from "../lib/notion.js";
 import { getConfig, setConfig } from "../lib/storage.js";
+import { REPO_URL } from "../lib/version.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -54,6 +55,19 @@ $("reset").addEventListener("click", async () => {
   await chrome.storage.local.clear();
   location.reload();
 });
+
+// ---------- เช็คเวอร์ชันใหม่ + รีโหลด ----------
+$("update-github").href = REPO_URL;
+$("update-reload").addEventListener("click", () => chrome.runtime.reload());
+
+(async function initUpdate() {
+  $("version-label").textContent = "v" + chrome.runtime.getManifest().version;
+  const res = await chrome.runtime.sendMessage({ action: "checkUpdate", force: true }).catch(() => null);
+  if (res?.ok && res.outdated) {
+    $("update-versions").textContent = `${res.latest} (ติดตั้งอยู่ ${res.current})`;
+    $("update-banner").hidden = false;
+  }
+})();
 
 // ---------- init: เติมค่าเดิม ----------
 (async function init() {

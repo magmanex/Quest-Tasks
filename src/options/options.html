@@ -11,9 +11,25 @@
       <span class="brand-mark">🎯</span>
       <div>
         <h1>Quest Tasks</h1>
-        <div class="eyebrow">ตั้งค่าและเชื่อมต่อ Notion</div>
+        <div class="eyebrow">ตั้งค่าและเชื่อมต่อ Notion · <span id="version-label"></span></div>
       </div>
     </header>
+
+    <!-- แจ้งเตือนเวอร์ชันใหม่จาก GitHub -->
+    <section class="update-banner" id="update-banner" hidden>
+      <div class="update-head">
+        <strong>มีเวอร์ชันใหม่</strong>
+        <span id="update-versions" class="muted"></span>
+      </div>
+      <p class="muted small" style="margin:0;">
+        extension อัปเดตไฟล์เองไม่ได้ — เปิด terminal ที่โฟลเดอร์โปรเจกต์ สั่ง <code>git pull</code>
+        แล้วกดปุ่มด้านล่างเพื่อรีโหลด extension จากไฟล์ใหม่
+      </p>
+      <div class="row">
+        <a id="update-github" class="btn" target="_blank" rel="noopener">ดูใน GitHub</a>
+        <button id="update-reload" class="btn primary">git pull แล้ว → โหลดใหม่</button>
+      </div>
+    </section>
 
     <!-- STEP 1: token -->
     <section class="block">

@@ -31,6 +31,7 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
 | `addReading`    | `{title, url?, tag?}`          | `{ok, item}`                             | เพิ่มเข้า reading database |
 | `markRead`      | `{pageId}`                     | `{ok}`                                   | ติ๊กว่าอ่านแล้ว |
 | `archiveReading`| `{pageId}`                     | `{ok}`                                   | archive page (soft delete, กู้ได้ใน Notion trash) |
+| `checkUpdate`   | `{force?}`                     | `{ok, current, latest, outdated, stale?}`| เทียบ version กับ GitHub, cache 6 ชม. (force ข้าม cache) |
 
 `snooze` กับ `setDate` ใช้ `notion.snoozeTask()` ตัวเดียวกัน (set `date.start`) ต่างกันแค่คำนวณวันที่ฝั่ง caller
 
@@ -76,6 +77,17 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
 ### Gamification
 - `lib/storage.js` → `xpForRank` / `levelFromXp` / `applyReward` / `updateStreakIfCleared`
 - state อยู่ใน `config.game {xp, level, streak, lastClearedDate}`
+
+### แจ้งเตือนเวอร์ชันใหม่จาก GitHub (`lib/version.js`)
+- `compareVersions(a,b)` เทียบ semver ทีละ segment เป็นตัวเลข; `fetchLatestVersion()` ดึง `version` จาก
+  GitHub raw manifest (`RAW_MANIFEST_URL`, branch `main`) — fetch อย่างเดียว ไม่แตะ chrome.* (portable)
+- background `checkUpdate` (background.js): เทียบกับ `chrome.runtime.getManifest().version`, cache 6 ชม.
+  ใน `config.updateCheck {latest, checkedAt}` (`force:true` ข้าม cache), เน็ตล่ม → คืน cache เดิม (`stale:true`)
+- popup.js → `checkUpdate()` เรียกตอนเปิด (ไม่ผ่าน syncbar) outdated → `.icon-btn.has-update` (จุดแดงที่ไอคอนตั้งค่า)
+- options.js → `initUpdate()` โชว์ `v<version>` ที่หัว + แบนเนอร์ `#update-banner` ถ้ามีใหม่;
+  ปุ่ม "โหลดใหม่" = `chrome.runtime.reload()`, ลิงก์ "ดูใน GitHub" = `REPO_URL`
+- **ข้อจำกัด:** unpacked extension เขียนทับไฟล์เองไม่ได้ → ผู้ใช้ `git pull` เองแล้วกดปุ่ม reload (ดู CLAUDE.md → Versioning)
+- test: `test/version.test.mjs` (compareVersions)
 
 ### อ่านทีหลัง (Reading List) — เมนูแยกจาก quest
 - database คนละตัวจาก quest, คนละ data source id (`readingDataSourceId`) ไม่มี XP/due date/quest pop
@@ -179,6 +191,7 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
   },
   game: { xp, level, streak, lastClearedDate },
   shownQuestState: { date, ids: [] },              // กัน quest เด้งซ้ำราย task ต่อวัน
+  updateCheck: { latest, checkedAt } | null,       // cache ผลเช็คเวอร์ชัน GitHub (6 ชม.)
 
   readingDatabaseId, readingDataSourceId,          // "อ่านทีหลัง" — database คนละตัวจาก quest
   readingParentPageId,                             // page แม่ของ reading database

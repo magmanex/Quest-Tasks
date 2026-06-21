@@ -56,7 +56,10 @@ const DEFAULTS = {
 
   // --- สถานะภายใน ---
   // กัน quest window เด้งซ้ำ: จำ id งานที่เด้งไปแล้วของวันนี้ (reset เมื่อขึ้นวันใหม่)
-  shownQuestState: { date: null, ids: [] }
+  shownQuestState: { date: null, ids: [] },
+
+  // cache ผลเช็คเวอร์ชันล่าสุดจาก GitHub: { latest, checkedAt } (กัน fetch ถี่เกิน)
+  updateCheck: null
 };
 
 export async function getConfig() {

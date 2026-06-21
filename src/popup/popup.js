@@ -459,4 +459,11 @@ $("refresh").addEventListener("click", async () => {
 
 makeDropZone($("list"), null); // ลากมาที่ลิสต์วันนี้ = ตั้งเป็นวันนี้
 
+// เช็คเวอร์ชันใหม่จาก GitHub (เงียบ ๆ ไม่โชว์ syncbar) — มีใหม่ก็แต้มจุดแดงที่ไอคอนตั้งค่า
+async function checkUpdate() {
+  const res = await chrome.runtime.sendMessage({ action: "checkUpdate" }).catch(() => null);
+  $("open-options").classList.toggle("has-update", Boolean(res?.ok && res.outdated));
+}
+
 loadOrder().then(load);
+checkUpdate();
