@@ -32,9 +32,9 @@ src/
                          (เช่น Scriptable บน iOS) ดู "สถาปัตยกรรมแบบ cross-platform" ด้านล่าง
   lib/storage.js         config + game state (chrome.storage.local) + ตรรกะ XP/level/streak/rankLetter
   lib/thaiDate.js        parser วันที่ภาษาไทย + helper จัดการวันที่ (timezone Asia/Bangkok)
-  popup/   (.html/js/css)   popup หลัก: 2 tab สลับด้วย bottom nav (เหมือน mobile app) —
-                            "Quest" (งานวันนี้ + quick-add + XP bar) / "อ่านทีหลัง" (list + quick-add)
-                            ทั้งสอง tab อยู่ใน DOM เดียวกัน สลับด้วย `hidden` attribute ไม่เปิด tab/window ใหม่
+  popup/   (.html/js/css)   popup หลัก: งานวันนี้ + quick-add + XP bar + ปุ่มเปิด "อ่านทีหลัง" (footer)
+  reading/ (.html/js/css)   เมนู "อ่านทีหลัง" แยกจาก quest คนละหน้า — เปิดเป็น browser tab ปกติ
+                            (ไม่ใช่ popup window) ผ่าน `chrome.tabs.create`
   quest/   (.html/js/css)   หน้าต่าง quest แบบเกม (signature UI) + animation + เสียง
   options/ (.html/js/css)   หน้าตั้งค่า: token (step 1) + การเตือน (step 2) + ล้างการตั้งค่า — แค่นี้
                             การจัดการ database (quest/reading) ย้ายไปหน้า migrate แยกแล้ว
@@ -175,7 +175,8 @@ src/
       แต่ยังไม่ sync การแก้ไขฝั่ง Notion กลับมาแบบ realtime (ต้องกด refresh / รอ alarm)
 - [ ] **เวลาในงาน sync ลำดับข้ามเครื่อง** — `taskOrder` เป็น local-only ถ้าใช้หลายเครื่องลำดับไม่ตรงกัน
 - [x] **อ่านทีหลัง (Reading List)** — เมนูแยกจาก quest, database คนละตัว, capture ผ่าน context menu
-      (เลือกข้อความ / คลิกขวาลิงก์), สลับ tab ในตัว popup ด้วย bottom nav (ไม่เปิดหน้าต่างแยกแล้ว)
+      (เลือกข้อความ / คลิกขวาลิงก์), หน้า `src/reading/` เปิดเป็น browser tab แยก (ปุ่ม "📚 อ่านทีหลัง"
+      ใน footer ของ popup) ไม่ผสมกับ quest ในหน้าเดียว
       ที่ยังไม่ทำ: UI แก้/ดู property `บันทึก` (rich_text), filter ตาม `แท็ก`, pagination ถ้ารายการเกิน ~100
 - [x] **เช็ค & อัปเดต schema database + migration log บน Notion** — หน้า `migrate/` (แยกจาก options
       แล้ว) มีปุ่มเดียวต่อ database เช็คว่า property ครบไหม ไม่ครบกดอัปเดตได้ ครบแล้ว disable ปุ่ม ทุก
