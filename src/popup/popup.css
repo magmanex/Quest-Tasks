@@ -215,6 +215,8 @@ body { width: 360px; height: 600px; overflow: hidden; } /* fix สูง popup �
 .update-banner .ub-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .update-banner .ub-title { color: #E0A106; font-weight: 600; }
 .update-banner .ub-ver { color: var(--ink-faint); font-size: 11px; }
+.update-banner .ub-hint { color: var(--ink-faint); font-size: 10px; margin-top: 2px; }
+.update-banner .ub-hint code { font-size: 10px; }
 .update-banner .ub-btn {
   flex-shrink: 0; padding: 5px 9px; border-radius: 6px;
   background: #E0A106; color: #1a1300; border: none; font-size: 11px;
