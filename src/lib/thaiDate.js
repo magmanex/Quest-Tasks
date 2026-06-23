@@ -120,6 +120,18 @@ export function parseQuickAdd(input, baseISO = bangkokToday()) {
     return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   });
 
+  // "วันที่ N" / "ทุกวันที่ N" = วันที่ N ของเดือน — เลือก occurrence ถัดไป (เดือนนี้ถ้ายังไม่เลย ไม่งั้นเดือนหน้า)
+  // คู่กับ repeat="ทุกเดือน" จะ anchor วันที่นั้นทุกเดือน (เช่น "สรุปเงิน ทุกเดือนวันที่ 28")
+  tryMatch(/(?:ทุก\s*)?วันที่\s*(\d{1,2})/, (m) => {
+    const dom = +m[1];
+    const [y, mo, d] = baseISO.split("-").map(Number);
+    let ty = y, tmo = mo;
+    if (dom < d) { tmo++; if (tmo > 12) { tmo = 1; ty++; } } // เลยวันนั้นของเดือนนี้แล้ว -> เดือนหน้า
+    const lastDay = new Date(Date.UTC(ty, tmo, 0)).getUTCDate();
+    const dd = Math.min(dom, lastDay); // clamp เช่น "วันที่ 31" ในเดือนที่มี 30 วัน
+    return `${ty}-${String(tmo).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+  });
+
   tryMatch(/มะรืน(?:นี้)?/, () => addDays(baseISO, 2));
   tryMatch(/พรุ่งนี้|พรุ้งนี้/, () => addDays(baseISO, 1));
   tryMatch(/วันนี้/, () => baseISO);

@@ -39,7 +39,7 @@ popup.js / quest.js  ──sendMessage──▶  background.js (handleMessage)  
 
 ### Quick-add ภาษาไทย + เวลา
 - `lib/thaiDate.js` → `parseQuickAdd(input, baseISO)` คืน `{title, dateISO}`
-- แยกวลีวัน (วันนี้/พรุ่งนี้/มะรืน/สิ้นเดือน/สัปดาห์หน้า/อีก N วัน/ชื่อวัน/`dd/mm[/yyyy]` รองรับ พ.ศ.)
+- แยกวลีวัน (วันนี้/พรุ่งนี้/มะรืน/สิ้นเดือน/สัปดาห์หน้า/อีก N วัน/ชื่อวัน/`วันที่ N` (day-of-month)/`dd/mm[/yyyy]` รองรับ พ.ศ.)
 - แยก **เวลา** ออกจากชื่องาน: `12.00` / `9:30` / `14.00น.` / `7น.` → ผนวกเป็น datetime `...T HH:MM:00+07:00`
 - test: `node test/thaiDate.test.mjs`
 

@@ -37,6 +37,12 @@ assert.deepEqual(p("ออกกำลังกาย ทุกวัน"),
 assert.equal(p("รดน้ำต้นไม้ ทุกอาทิตย์").repeat, "ทุกสัปดาห์");
 assert.equal(p("ซื้อของ พรุ่งนี้").repeat, null); // ไม่ระบุ = null
 
+// "วันที่ N" = วันที่ N ของเดือน (occurrence ถัดไป) + คู่กับ repeat
+assert.deepEqual(p("สรุปเงิน ทุกเดือนในวันที่ 28"),
+  { title: "สรุปเงิน", dateISO: "2026-06-28", repeat: "ทุกเดือน" }); // base 16, 28 ยังไม่เลย -> เดือนนี้
+assert.equal(p("จ่ายบิล วันที่ 5").dateISO, "2026-07-05");  // 5 เลยแล้ว (base 16) -> เดือนหน้า
+assert.equal(p("เช็ค วันที่ 31").dateISO, "2026-06-30");     // clamp มิ.ย. = 30 วัน
+
 // addMonths clamp วันสิ้นเดือน
 assert.equal(addMonths("2026-01-31", 1), "2026-02-28");
 assert.equal(addMonths("2026-12-15", 1), "2027-01-15"); // ข้ามปี
