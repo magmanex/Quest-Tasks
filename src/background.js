@@ -8,10 +8,8 @@
 import * as notion from "./lib/notion.js";
 import { getConfig, setConfig, isSetupComplete, isReadingSetupComplete, applyReward, updateStreakIfCleared } from "./lib/storage.js";
 import { bangkokToday, addDays } from "./lib/thaiDate.js";
-import { compareVersions, fetchLatestVersion } from "./lib/version.js";
 
 const ALARM_NAME = "questCheck";
-const UPDATE_CACHE_MS = 6 * 60 * 60 * 1000; // เช็ค GitHub อย่างมากทุก 6 ชม.
 let questWindowId = null;
 
 // ---------- lifecycle ----------
@@ -264,9 +262,6 @@ async function handleMessage(msg) {
       await notion.archiveReadingItem(cfg.token, msg.pageId);
       return { ok: true };
 
-    case "checkUpdate":
-      return checkUpdate(cfg, msg.force);
-
     case "rescheduleAlarm":
       await ensureAlarm();
       return { ok: true };
@@ -277,29 +272,6 @@ async function handleMessage(msg) {
 
     default:
       return { ok: false, error: `ไม่รู้จัก action: ${msg.action}` };
-  }
-}
-
-// ---------- update check (เทียบ version กับ GitHub) ----------
-// คืน { ok, current, latest, outdated } — cache 6 ชม. เว้นแต่ force
-// เน็ตล่ม: คืน cache เดิมถ้ามี (stale:true) ไม่งั้น ok:false เงียบ ๆ
-async function checkUpdate(cfg, force) {
-  const current = chrome.runtime.getManifest().version;
-  const cache = cfg.updateCheck;
-  const result = (latest, extra) => ({
-    ok: true, current, latest, outdated: compareVersions(current, latest) < 0, ...extra
-  });
-
-  if (!force && cache && Date.now() - cache.checkedAt < UPDATE_CACHE_MS) {
-    return result(cache.latest);
-  }
-  try {
-    const latest = await fetchLatestVersion();
-    await setConfig({ updateCheck: { latest, checkedAt: Date.now() } });
-    return result(latest);
-  } catch (e) {
-    if (cache) return result(cache.latest, { stale: true });
-    return { ok: false, error: e.message };
   }
 }
 
