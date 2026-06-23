@@ -69,32 +69,41 @@ function makeCard(t) {
   const card = document.createElement("div");
   card.className = `qcard rank${rankSuffix(t.rank)}`;
   const meta = fmtMeta(t);
+  const actions = t.repeat
+    ? `<button class="qbtn qbtn-done">✓ เสร็จวันนี้</button>
+       <button class="qbtn qbtn-snooze qbtn-close" title="ปิดงานนี้ ไม่ทำซ้ำอีก">ปิดงาน</button>`
+    : `<button class="qbtn qbtn-done">✓ เคลียร์ quest</button>
+       <button class="qbtn qbtn-snooze">เลื่อนไปพรุ่งนี้</button>`;
   card.innerHTML = `
     <div class="qcard-head">
       <span class="rank rank-${rankSuffix(t.rank)}">${t.rank || "B"}</span>
       <span class="qcard-title"></span>
+      ${t.repeat ? `<span class="qrepeat">🔁 ${t.repeat}</span>` : ""}
     </div>
     <div class="qcard-meta ${meta.late ? "late" : ""}">${meta.text}</div>
-    <div class="qcard-actions">
-      <button class="qbtn qbtn-done">✓ เคลียร์ quest</button>
-      <button class="qbtn qbtn-snooze">เลื่อนไปพรุ่งนี้</button>
-    </div>
+    <div class="qcard-actions">${actions}</div>
     <div class="stamp">CLEARED</div>`;
   card.querySelector(".qcard-title").textContent = t.title;
   card.querySelector(".qbtn-done").addEventListener("click", (e) => clearQuest(card, t, e));
-  card.querySelector(".qbtn-snooze").addEventListener("click", () => snoozeQuest(card, t));
+  // recurring: ปุ่มที่สองคือ "ปิดงาน" (complete จริง); ไม่ใช่ recurring คือ "เลื่อน"
+  card.querySelector(".qbtn-snooze").addEventListener("click", () =>
+    t.repeat ? clearQuest(card, t, null, true) : snoozeQuest(card, t));
   return card;
 }
 
 let remaining = 0;
 
-async function clearQuest(card, task, evt) {
+// close=true (recurring): ปิดงานถาวร (complete จริง). recurring + close=false: เสร็จวันนี้ (เลื่อน occurrence)
+async function clearQuest(card, task, evt, close) {
   const rect = card.getBoundingClientRect();
   card.classList.add("cleared");
   chime();
   burst(rect.left + rect.width / 2, rect.top + rect.height / 2);
 
-  const res = await send({ action: "complete", pageId: task.id, rank: task.rank });
+  const msg = (task.repeat && !close)
+    ? { action: "completeRecurring", pageId: task.id, rank: task.rank, repeat: task.repeat, date: task.date }
+    : { action: "complete", pageId: task.id, rank: task.rank };
+  const res = await send(msg);
   if (res?.ok) {
     renderGame(res.game);
     remaining = res.remaining;

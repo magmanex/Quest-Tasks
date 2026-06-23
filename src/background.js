@@ -7,7 +7,7 @@
 
 import * as notion from "./lib/notion.js";
 import { getConfig, setConfig, isSetupComplete, isReadingSetupComplete, applyReward, updateStreakIfCleared } from "./lib/storage.js";
-import { bangkokToday, addDays } from "./lib/thaiDate.js";
+import { bangkokToday, addDays, nextOccurrence } from "./lib/thaiDate.js";
 
 const ALARM_NAME = "questCheck";
 let questWindowId = null;
@@ -212,7 +212,7 @@ async function handleMessage(msg) {
 
     case "add": {
       const task = await notion.createTask(cfg.token, cfg.dataSourceId, cfg.propMap, {
-        title: msg.title, dateISO: msg.dateISO, rank: msg.rank
+        title: msg.title, dateISO: msg.dateISO, rank: msg.rank, repeat: msg.repeat
       });
       refreshBadge();
       return { ok: true, task };
@@ -225,6 +225,17 @@ async function handleMessage(msg) {
       updateBadge(tasks.length);
       const streakGame = await updateStreakIfCleared(today, tasks.length);
       return { ok: true, reward, remaining: tasks.length, game: streakGame || reward.game };
+    }
+
+    // recurring quest "เสร็จวันนี้": เลื่อนวันเตือนไป occurrence ถัดไป (ไม่ติ๊ก done) + ได้ XP
+    case "completeRecurring": {
+      const next = nextOccurrence(msg.date, msg.repeat, today);
+      await notion.snoozeTask(cfg.token, msg.pageId, cfg.propMap, next);
+      const reward = await applyReward(msg.rank, today);
+      const tasks = await notion.getDueTasks(cfg.token, cfg.dataSourceId, cfg.propMap, today);
+      updateBadge(tasks.length);
+      const streakGame = await updateStreakIfCleared(today, tasks.length);
+      return { ok: true, reward, remaining: tasks.length, game: streakGame || reward.game, next };
     }
 
     case "snooze": {

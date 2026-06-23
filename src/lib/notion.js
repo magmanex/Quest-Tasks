@@ -63,13 +63,13 @@ export async function listAccessiblePages(token) {
 // เลขเวอร์ชัน schema — bump ทุกครั้งที่แก้ questSchema()/readingSchema() (เพิ่ม/ลบ/เปลี่ยน type property)
 // เขียนลง "เวอร์ชัน" ใน migration log ทุกครั้งที่ create/link/update เพื่อให้ดูใน Notion ได้ว่า
 // database ไหนอยู่ที่เวอร์ชันล่าสุดหรือยัง โดยไม่ต้องเปิดโค้ดมาไล่เทียบ property เอง
-export const QUEST_SCHEMA_VERSION = 1;
+export const QUEST_SCHEMA_VERSION = 2; // v2: เพิ่ม property "ทำซ้ำ" (recurring quest)
 export const READING_SCHEMA_VERSION = 1;
 
 // วันที่ "ออก" แต่ละเวอร์ชัน (วันที่ codebase เปลี่ยน schema จริง ๆ ไม่ใช่วันที่ user สั่ง migrate)
 // เพิ่ม entry ใหม่ทุกครั้งที่ bump เลขเวอร์ชันด้านบน — ใช้โชว์ใน migration log คู่กับ "วันที่อัปเดต"
 // (วันที่ user สั่ง migrate จริง) จะได้แยกออกว่า "เวอร์ชันนี้ออกเมื่อไหร่" vs "database นี้ตามทันเมื่อไหร่"
-export const QUEST_SCHEMA_RELEASES = { 1: "2026-06-21" };
+export const QUEST_SCHEMA_RELEASES = { 1: "2026-06-21", 2: "2026-06-23" };
 export const READING_SCHEMA_RELEASES = { 1: "2026-06-21" };
 
 // schema ของ quest/reading เป็น single source of truth — ใช้ทั้งตอนสร้าง database ใหม่
@@ -86,6 +86,15 @@ export function questSchema(propMap) {
           { name: "A - สำคัญ", color: "orange" },
           { name: "B - ปกติ", color: "blue" },
           { name: "C - ทำเมื่อว่าง", color: "gray" }
+        ]
+      }
+    },
+    [propMap.repeat]: {
+      select: {
+        options: [
+          { name: "ทุกวัน", color: "green" },
+          { name: "ทุกสัปดาห์", color: "blue" },
+          { name: "ทุกเดือน", color: "purple" }
         ]
       }
     }
@@ -301,13 +310,14 @@ export async function getUpcomingTasks(token, dataSourceId, propMap, afterISO, t
 }
 
 // สร้าง quest ใหม่
-export async function createTask(token, dataSourceId, propMap, { title, dateISO, rank }) {
+export async function createTask(token, dataSourceId, propMap, { title, dateISO, rank, repeat }) {
   const properties = {
     [propMap.title]: { title: [{ text: { content: title } }] },
     [propMap.date]: { date: { start: dateISO } },
     [propMap.done]: { checkbox: false }
   };
   if (rank) properties[propMap.rank] = { select: { name: rank } };
+  if (repeat) properties[propMap.repeat] = { select: { name: repeat } };
 
   const page = await call(token, "/pages", "POST", {
     parent: { type: "data_source_id", data_source_id: dataSourceId },
@@ -337,11 +347,13 @@ function normalizeTask(page, propMap) {
   const titleProp = props[propMap.title];
   const dateProp = props[propMap.date];
   const rankProp = props[propMap.rank];
+  const repeatProp = props[propMap.repeat];
   return {
     id: page.id,
     title: titleProp?.title?.map(t => t.plain_text).join("") || "(ไม่มีชื่อ)",
     date: dateProp?.date?.start || null,
     rank: rankProp?.select?.name || null,
+    repeat: repeatProp?.select?.name || null,
     url: page.url
   };
 }
