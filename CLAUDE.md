@@ -24,8 +24,8 @@ src/
     ├─ quest window      เด้ง src/quest/quest.html (popup window) เมื่อมีงานถึงกำหนด
     ├─ context menu      "เพิ่มเป็น quest" จากข้อความที่เลือก
     └─ message API       popup/quest ส่ง message มาที่นี่
-                         (status/queryDue/queryUpcoming/add/complete/snooze/setDate/rescheduleAlarm/refreshBadge/
-                          queryUnread/addReading/markRead/archiveReading)
+                         (status/queryDue/queryUpcoming/add/complete/completeRecurring/snooze/setDate/
+                          rescheduleAlarm/refreshBadge/queryUnread/addReading/markRead/archiveReading)
   lib/notion.js          ตัวห่อ Notion REST API ทั้งหมด (อยู่ที่เดียว) — quest functions + reading list functions
   lib/migrate.js         orchestration ของ create/link/check/update schema + migration log — **pure JS
                          ไม่แตะ chrome.* เลย** (import แค่ notion.js) ตั้งใจเผื่อพอร์ตไป host อื่นในอนาคต
@@ -172,8 +172,13 @@ src/
 
 - [x] **ทดสอบบน browser จริงแล้ว (v0.3)** — flow หลัก (quick-add, alarm/quest pop, drag-drop, date edit) ใช้งานได้
       ยังควร verify migrate flow + edge ของ recurring/pagination เมื่อแตะส่วนนั้น
-- [ ] **Recurring quest** — งานประจำ (เช่นโอนเงินทุกสิ้นเดือน) ยังไม่ทำ ต้องเพิ่ม property เช่น
-      "ทำซ้ำ" แล้วตอน complete ให้ createTask occurrence ถัดไป (Notion ไม่มี recurrence ใน API)
+- [x] **Recurring quest (v0.4.0)** — property select `ทำซ้ำ` (propMap.repeat) = ทุกวัน/ทุกสัปดาห์/ทุกเดือน
+      ตั้งตอน quick-add ด้วยคีย์เวิร์ด "ทุกวัน/ทุกสัปดาห์(อาทิตย์)/ทุกเดือน" (parseQuickAdd คืน field `repeat`)
+      task ที่ repeat มี 2 ปุ่ม: "เสร็จวันนี้" (action `completeRecurring` → เลื่อนวันไป occurrence ถัดไป
+      ด้วย `nextOccurrence()` ใน thaiDate.js + ได้ XP, ไม่ติ๊ก done) กับ "ปิดงาน" (action `complete` ปกติ
+      = ติ๊ก done หยุดทำซ้ำ) `nextOccurrence` เดินทีละ period จากวันเดิมจนเลย today (รักษา anchor วันที่/
+      วันในสัปดาห์, คงส่วนเวลา datetime) **drift หมายเหตุ:** ไม่ reschedule อัตโนมัติ — งานโผล่ซ้ำต่อเมื่อ
+      กด "เสร็จวันนี้" (ตั้งใจ: ทำเสร็จแล้วค่อยนัดครั้งหน้า ไม่ใช่ปฏิทินตายตัว) bump QUEST_SCHEMA_VERSION→2
 - [ ] **Offline queue + retry** — ถ้า write fail (เน็ตหลุด / service worker ถูก kill) ยังไม่มี queue
       ควรเก็บ pending writes ใน storage แล้ว retry ตอน alarm ถัดไป
 - [ ] **Pagination** — `getDueTasks` ดึงหน้าเดียว (ไม่เกิน ~100 รายการ) ถ้างานค้างเยอะกว่านั้น

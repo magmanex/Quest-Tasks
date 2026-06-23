@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Quest Tasks — Notion Reminder",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "เปลี่ยนสิ่งที่ต้องทำใน Notion ให้เป็น quest ที่อยากเคลียร์ เด้งเตือนตามวันที่กำหนด",
   "permissions": [
     "storage",

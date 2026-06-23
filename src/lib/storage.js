@@ -15,7 +15,8 @@ const DEFAULTS = {
     title: "งาน",
     date: "วันเตือน",
     done: "เสร็จแล้ว",
-    rank: "ระดับ"
+    rank: "ระดับ",
+    repeat: "ทำซ้ำ"
   },
 
   // --- "อ่านทีหลัง" (เมนูแยกจาก quest, database คนละตัว) ---

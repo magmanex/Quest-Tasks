@@ -170,19 +170,25 @@ function renderList(tasks, today) {
     const overdue = t.date && t.date < today;
     const card = document.createElement("div");
     card.className = "card" + (overdue ? " overdue" : "");
+    const doneBtns = t.repeat
+      ? `<button class="act act-done">✓ เสร็จวันนี้</button>
+         <button class="act act-close" title="ปิดงานนี้ ไม่ทำซ้ำอีก">ปิดงาน</button>`
+      : `<button class="act act-done">✓ เคลียร์</button>`;
     card.innerHTML = `
       <div class="card-top">
         <span class="rank ${rankClass(t.rank)}">${rankLetter(t.rank)}</span>
         <span class="card-title"></span>
+        ${t.repeat ? `<span class="repeat-chip">🔁 ${t.repeat}</span>` : ""}
         <span class="card-date ${overdue ? "late" : ""}">${overdue ? "เลยมา " : ""}${fmtDate(t.date, today)}</span>
       </div>
       <div class="card-actions">
-        <button class="act act-done">✓ เคลียร์</button>
+        ${doneBtns}
         <button class="act act-snooze" title="เลื่อนไปพรุ่งนี้">เลื่อนไปพรุ่งนี้</button>
         <button class="act act-open" title="แก้ไข/ลบใน Notion" ${t.url ? "" : "hidden"}>↗ Notion</button>
       </div>`;
     card.querySelector(".card-title").textContent = t.title;
-    card.querySelector(".act-done").addEventListener("click", () => complete(card, t));
+    card.querySelector(".act-done").addEventListener("click", () => t.repeat ? completeToday(card, t) : complete(card, t));
+    card.querySelector(".act-close")?.addEventListener("click", () => complete(card, t));
     card.querySelector(".act-snooze").addEventListener("click", () => snooze(card, t));
     if (t.url) card.querySelector(".act-open").addEventListener("click", () => chrome.tabs.create({ url: t.url }));
     makeDraggable(card, t);
@@ -277,6 +283,19 @@ async function complete(card, task) {
   }
 }
 
+// recurring "เสร็จวันนี้": เลื่อนไป occurrence ถัดไป + ได้ XP (ไม่ปิดงาน)
+async function completeToday(card, task) {
+  card.classList.add("clearing");
+  const res = await send({
+    action: "completeRecurring", pageId: task.id, rank: task.rank, repeat: task.repeat, date: task.date
+  });
+  setTimeout(() => load(), 320);
+  if (res?.ok && res.reward) {
+    flashHint(`+${res.reward.gained} XP · ครั้งหน้า ${fmtDate(res.next, lastToday)}`);
+    if (res.game) renderGame(res.game);
+  }
+}
+
 async function snooze(card, task) {
   card.classList.add("clearing");
   await send({ action: "snooze", pageId: task.id, days: 1 });
@@ -292,10 +311,10 @@ function flashHint(text) {
 async function quickAdd() {
   const raw = $("quick-input").value.trim();
   if (!raw) return;
-  const { title, dateISO } = parseQuickAdd(raw);
+  const { title, dateISO, repeat } = parseQuickAdd(raw);
   $("quick-input").value = "";
-  flashHint(`เพิ่ม "${title}" → ${dateISO}`);
-  const res = await send({ action: "add", title, dateISO, rank: "B - ปกติ" });
+  flashHint(`เพิ่ม "${title}" → ${dateISO}${repeat ? " · " + repeat : ""}`);
+  const res = await send({ action: "add", title, dateISO, rank: "B - ปกติ", repeat });
   if (!res?.ok) flashHint(`ผิดพลาด: ${res?.error || "ไม่ทราบสาเหตุ"}`);
   load();
 }

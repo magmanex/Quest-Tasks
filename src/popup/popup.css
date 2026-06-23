@@ -111,6 +111,10 @@ body { width: 360px; height: 600px; overflow: hidden; } /* fix สูง popup �
 .act:hover { background: var(--bg-card-hover); color: var(--ink); }
 .act-done { border-color: rgba(79,178,134,0.4); color: var(--jade); }
 .act-done:hover { background: rgba(79,178,134,0.12); }
+.repeat-chip {
+  font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 6px;
+  background: var(--bg-card-hover); color: var(--ink-dim); white-space: nowrap;
+}
 
 .empty {
   text-align: center; padding: 28px 10px; color: var(--ink-faint);
